@@ -4,45 +4,44 @@ using System.Collections;
 
 public class RoadCreator : MonoBehaviour
 {
-    #region 添加路段相关变量
+    #region 添加路段 
     public InputField lengthInputField;
     public InputField pitchInputField;
     public InputField yawInputField;
     public InputField RollInputField;
     public Button addSegmentButton;
-    #endregion
 
-    #region 添加路段相关事件
-
-    public void onLengthChanged(string newText)
+    public void OnLengthChanged(string newText)
     {
         Debug.Log(newText);
-        float value = float.Parse(newText);
+        float length;
+        float.TryParse(newText, out length);
 
-        if (value <= 1)
+        if (length <= 1)
         {
-            value = 1;
-            lengthInputField.text = value.ToString();
+            length = 1;
+            lengthInputField.text = length.ToString();
         }
-
-
     }
 
-    public void onPitchChanged(string newText)
+    public void OnPitchChanged(string newText)
     {
-        float angle = float.Parse(newText);
+        float angle;
+        float.TryParse(newText, out angle);
         pitchInputField.text = ClampAngle(angle).ToString();
     }
 
-    public void onYawChanged(string newText)
+    public void OnYawChanged(string newText)
     {
-        float angle = float.Parse(newText);
+        float angle;
+        float.TryParse(newText, out angle);
         yawInputField.text = ClampAngle(angle).ToString();
     }
 
-    public void onRollChanged(string newText)
+    public void OnRollChanged(string newText)
     {
-        float angle = float.Parse(newText);
+        float angle;
+        float.TryParse(newText, out angle);
         RollInputField.text = ClampAngle(angle).ToString();
     }
 
@@ -85,14 +84,16 @@ public class RoadCreator : MonoBehaviour
 
     public InputField roadWidthInputField;
     public InputField subdivistionField;
+    public Text smoothText;
     public Slider smoothSlider;
 
 
     public void OnRoadWidthChanged(string newText)
     {
         Debug.Log(newText);
-        float width = float.Parse(newText);
-        if(width< minRoadWidth)
+        float width;
+        float.TryParse(newText, out width);
+        if (width < minRoadWidth)
         {
             roadWidthInputField.text = minRoadWidth.ToString();
         }
@@ -100,11 +101,18 @@ public class RoadCreator : MonoBehaviour
 
     public void OnSubdivisionChanged(string newText)
     {
-        int division = int.Parse(newText);
-        if(division< minSubdivition)
+        int division;
+        int.TryParse(newText, out division);
+        if (division < minSubdivition)
         {
             subdivistionField.text = minSubdivition.ToString();
         }
+    }
+
+    public void OnSmoothChanged(float value)
+    {
+        int ival = (int)value;
+        smoothText.text = string.Format("Smooth\n({0}%)", ival);
     }
 
     public void Generate()
@@ -116,6 +124,14 @@ public class RoadCreator : MonoBehaviour
 
     void Awake()
     {
+        lengthInputField.onEndEdit.AddListener(OnLengthChanged);
+        pitchInputField.onEndEdit.AddListener(OnPitchChanged);
+        yawInputField.onEndEdit.AddListener(OnYawChanged);
+        RollInputField.onEndEdit.AddListener(OnRollChanged);
+        roadWidthInputField.onEndEdit.AddListener(OnRoadWidthChanged);
+        subdivistionField.onEndEdit.AddListener(OnSubdivisionChanged);
+        smoothSlider.onValueChanged.AddListener(OnSmoothChanged);
+        //
         smoothSlider.minValue = smoothMin;
         smoothSlider.maxValue = smoothMax;
         smoothSlider.value = (smoothMin + smoothMax) / 2;
