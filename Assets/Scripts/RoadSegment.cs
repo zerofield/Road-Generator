@@ -3,23 +3,16 @@ using System.Collections;
 
 public class RoadSegment
 {
-    private Vector3 pointA;
-
     public Vector3 PointA
     {
-        get { return pointA; }
-        set
-        {
-            pointA = value;
-            UpdateValues();
-        }
+        get;
+        private set;
     }
-
-    private Vector3 pointB;
 
     public Vector3 PointB
     {
-        get { return pointB; }
+        get;
+        private set;
     }
 
     private float length;
@@ -29,12 +22,29 @@ public class RoadSegment
         get { return length; }
         set
         {
+            length = value;
             if (length < 0)
             {
                 length = 0;
                 Debug.Log("Length should not be less than zero.");
             }
-            length = value;
+            UpdateValues();
+        }
+    }
+
+    private float width;
+
+    public float Width
+    {
+        get { return width; }
+        set
+        {
+            width = value;
+            if (width < 0)
+            {
+                width = 0;
+                Debug.Log("Width must be greater than zero!");
+            }
             UpdateValues();
         }
     }
@@ -75,11 +85,10 @@ public class RoadSegment
         }
     }
 
-    private Quaternion rotation;
-
     public Quaternion Rotation
     {
-        get { return rotation; }
+        get;
+        private set;
     }
 
     public Vector3 Up
@@ -118,24 +127,100 @@ public class RoadSegment
         private set;
     }
 
-    public RoadSegment(Vector3 pointA, float length, float pitch, float yaw, float roll)
+
+    public Vector3 LowerLeftPoint
     {
-        this.pointA = new Vector3(pointA.x, pointA.y, pointA.z);
+        get;
+        private set;
+    }
+
+    public Vector3 LowerRightPoint
+    {
+        get;
+        private set;
+    }
+
+    public Vector3 UpperLeftPoint
+    {
+        get;
+        private set;
+    }
+
+    public Vector3 UpperRightPoint
+    {
+        get;
+        private set;
+    }
+
+    public RoadSegment(Vector3 pointA, float width, float length, float pitch, float yaw, float roll)
+    {
+        PointA = new Vector3(pointA.x, pointA.y, pointA.z);
+        this.width = width;
+        this.length = length;
+        this.pitch = pitch;
+        this.yaw = yaw;
+        this.roll = roll;
         UpdateValues();
     }
 
     public void UpdateValues()
     {
-        rotation = Quaternion.Euler(pitch, yaw, roll);
+        Rotation = Quaternion.Euler(pitch, yaw, roll);
         //direction vectors
-        Forward = rotation * Vector3.forward;
-        Back = rotation * Vector3.back;
-        Left = rotation * Vector3.left;
-        Right = rotation * Vector3.right;
-        Up = rotation * Vector3.up;
-        Down = rotation * Vector3.down;
+        Forward = Rotation * Vector3.forward;
+        Back = Rotation * Vector3.back;
+        Left = Rotation * Vector3.left;
+        Right = Rotation * Vector3.right;
+        Up = Rotation * Vector3.up;
+        Down = Rotation * Vector3.down;
         //pointB
-        pointB = pointA + Forward * length;
+        PointB = PointA + Forward * length;
+
+        //4 points
+        float halfWidth = width / 2;
+        LowerLeftPoint = PointA + Left * halfWidth;
+        LowerRightPoint = PointA + Right * halfWidth;
+        UpperLeftPoint = PointB + Left * halfWidth;
+        UpperRightPoint = PointB + Right * halfWidth;
+    }
+
+    public bool hasTheSameRotation(RoadSegment other)
+    {
+        if (other == null)
+        {
+            return false;
+        }
+        return Rotation.Equals(other.Rotation);
+    }
+
+
+    /// <summary>
+    /// 绘制轮廓
+    /// </summary>
+    public void DrawSkeleton()
+    {
+        Debug.Log("DrawSkeleton()");
+        GL.PushMatrix();
+        GL.Begin(GL.LINES);
+        GL.Color(Color.blue);
+        //left
+        GL.Vertex(LowerLeftPoint);
+        GL.Vertex(UpperLeftPoint);
+        //top
+        GL.Vertex(UpperLeftPoint);
+        GL.Vertex(UpperRightPoint);
+
+        //right
+        GL.Vertex(UpperRightPoint);
+        GL.Vertex(LowerRightPoint);
+        //bottom
+        GL.Vertex(LowerRightPoint);
+        GL.Vertex(LowerLeftPoint);
+        //a-b
+        GL.Vertex(PointA);
+        GL.Vertex(PointB);
+        GL.End();
+        GL.PopMatrix();
     }
 
 }
