@@ -73,8 +73,51 @@ public class RoadCreator : MonoBehaviour
     }
     #endregion
 
-    void Awake()
+
+
+
+    #region  生成路面
+
+    public float minRoadWidth = 1;
+    public int minSubdivition = 2;
+    public int smoothMin = 10;
+    public int smoothMax = 50;
+
+    public InputField roadWidthInputField;
+    public InputField subdivistionField;
+    public Slider smoothSlider;
+
+
+    public void OnRoadWidthChanged(string newText)
+    {
+        Debug.Log(newText);
+        float width = float.Parse(newText);
+        if(width< minRoadWidth)
+        {
+            roadWidthInputField.text = minRoadWidth.ToString();
+        }
+    }
+
+    public void OnSubdivisionChanged(string newText)
+    {
+        int division = int.Parse(newText);
+        if(division< minSubdivition)
+        {
+            subdivistionField.text = minSubdivition.ToString();
+        }
+    }
+
+    public void Generate()
     {
 
+    }
+
+    #endregion
+
+    void Awake()
+    {
+        smoothSlider.minValue = smoothMin;
+        smoothSlider.maxValue = smoothMax;
+        smoothSlider.value = (smoothMin + smoothMax) / 2;
     }
 }
