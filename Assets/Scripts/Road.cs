@@ -4,19 +4,10 @@ using System.Collections.Generic;
 
 public class Road
 {
-    private List<RoadSegment> segments = new List<RoadSegment>();
+    private List<BaseRoadSegment> segments = new List<BaseRoadSegment>();
 
-    public List<RoadSegment> Segments
+    public List<BaseRoadSegment> Segments
     {
         get { return segments; }
-    }
-
-    public void DrawSkeleton()
-    {
-        for (int i = 0; i < segments.Count; ++i)
-        {
-            segments[i].DrawSkeleton();
-        }
-
     }
 }
