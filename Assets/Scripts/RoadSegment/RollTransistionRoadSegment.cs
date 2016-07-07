@@ -3,12 +3,13 @@ using System.Collections;
 using System;
 
 /// <summary>
-/// 贝塞尔曲线路面
+/// Roll过渡路段
 /// </summary>
-public class BezierRoadSegment : BaseRoadSegment
+public class RollTransistionRoadSegment : BaseRoadSegment
 {
-    public BezierRoadSegment(RoadPoint pointA, float roadWidth) : base(pointA, roadWidth)
+    public RollTransistionRoadSegment(RoadPoint pointA, float roadWidth) : base(pointA, roadWidth)
     {
+
     }
 
     public override MeshData GenerateMesh(int subdivision, int baseIndex)

@@ -1,38 +1,22 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class RoadPoint
+public struct RoadPoint
 {
-    public Vector3 Position
-    {
-        get;
-        private set;
-    }
+    public Vector3 position;
 
-    public float Pitch
-    {
-        get;
-        private set;
-    }
+    public float pitch;
 
-    public float Yaw
-    {
-        get;
-        private set;
-    }
+    public float yaw;
 
-    public float Roll
-    {
-        get;
-        private set;
-    }
+    public float roll;
 
     public RoadPoint(Vector3 position, float pitch, float yaw, float roll)
     {
-        Position = position;
-        Pitch = pitch;
-        Yaw = yaw;
-        Roll = roll;
+        this.position = position;
+        this.pitch = pitch;
+        this.yaw = yaw;
+        this.roll = roll;
     }
 
 }

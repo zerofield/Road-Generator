@@ -3,12 +3,13 @@ using System.Collections;
 using System;
 
 /// <summary>
-/// 贝塞尔曲线路面
+/// Pitch过渡路段
 /// </summary>
-public class BezierRoadSegment : BaseRoadSegment
+public class PitchTransitionRoadSegment : BaseRoadSegment
 {
-    public BezierRoadSegment(RoadPoint pointA, float roadWidth) : base(pointA, roadWidth)
+    public PitchTransitionRoadSegment(RoadPoint pointA, float roadWidth) : base(pointA, roadWidth)
     {
+
     }
 
     public override MeshData GenerateMesh(int subdivision, int baseIndex)
@@ -20,6 +21,8 @@ public class BezierRoadSegment : BaseRoadSegment
     {
         throw new NotImplementedException();
     }
+
+   
 
     protected override void UpdateValues()
     {

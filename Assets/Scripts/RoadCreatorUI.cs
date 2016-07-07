@@ -2,13 +2,12 @@
 using UnityEngine.UI;
 using System.Collections;
 
-public class RoadCreator : MonoBehaviour
+public class RoadCreatorUI : MonoBehaviour
 {
-    [HideInInspector]
-    public Road road = new Road();
+
+    public RoadMeshCreator creator;
 
     #region 添加路段 
-
     public float minWidth = 1;
     public float minLength = 1;
 
@@ -20,6 +19,19 @@ public class RoadCreator : MonoBehaviour
     public InputField radiusInputField;
     public Button addSegmentButton;
     public Button removeSegmentButton;
+    #endregion
+
+    #region
+
+    public float minRoadWidth = 1;
+    public int minSubdivition = 2;
+    public int smoothMin = 10;
+    public int smoothMax = 50;
+
+    public InputField subdivistionField;
+    public Text smoothText;
+    public Slider smoothSlider;
+    #endregion
 
     public void OnWidthChanged(string newText)
     {
@@ -47,19 +59,19 @@ public class RoadCreator : MonoBehaviour
     public void OnPitchChanged(string newText)
     {
         float angle = tryGetFloat(newText, 0);
-        pitchInputField.text = ClampAngle(angle).ToString();
+        pitchInputField.text = Mathf.Clamp(angle, -360, 360).ToString();
     }
 
     public void OnRollChanged(string newText)
     {
         float angle = tryGetFloat(newText, 0);
-        rollInputField.text = ClampAngle(angle).ToString();
+        rollInputField.text = Mathf.Clamp(angle, -360, 360).ToString();
     }
 
     public void OnAngleChanged(string newText)
     {
         float angle = tryGetFloat(newText, 0);
-        angleInputField.text = ClampAngle(angle).ToString();
+        angleInputField.text = Mathf.Clamp(angle, -360, 360).ToString();
     }
 
     public void OnRadiusChanged(string newText)
@@ -78,80 +90,66 @@ public class RoadCreator : MonoBehaviour
     public void OnAddSegmentClicked()
     {
         float width = tryGetFloat(widthInputField.text, minWidth);
+       
         float length = tryGetFloat(lengthInputField.text, minLength);
         float pitch = tryGetFloat(pitchInputField.text, 0);
         float roll = tryGetFloat(rollInputField.text, 0);
+        float angle = tryGetFloat(angleInputField.text, 0);
+        float radius = tryGetFloat(radiusInputField.text, 0);
 
-        int count = road.Segments.Count;
+        int subdivision = (int)tryGetFloat(subdivistionField.text, minSubdivition);
 
-        Vector3 pointA;
+        RoadPoint pointA;
+
+        int count = creator.RawSegmentsCount;
+        BaseRoadSegment segment = null;
 
         if (count == 0)
         {
-            //TODO 决定第一个点的位置
-            pointA = Vector3.zero;
-            removeSegmentButton.interactable = true;
+            float tempPitch = 0;
+            float tempYaw = 0;
+            float tempRoll = 0;
+            pointA = new RoadPoint(Vector3.zero, tempPitch, tempYaw, tempRoll);
         }
         else
         {
-            pointA = road.Segments[road.Segments.Count - 1].PointB;
+            pointA = creator.LastRoadSegment().pointB;
         }
-        Debug.Log("Add a road segment");
-        RoadSegment newSegment = new RoadSegment(pointA, width, length, pitch, yaw, roll);
-        road.Segments.Add(newSegment);
+
+        //分为转弯和平面两个情况来考虑
+        if (angle != 0 && radius > 0)    //转弯路面
+        {
+            segment = null;
+        }
+        else //普通路面
+        {
+            SimpleRoadSegment simpleRoadSegment = new SimpleRoadSegment(pointA, width, length, pitch, roll);
+            segment = simpleRoadSegment;
+        }
+
+        creator.AddSegment(segment);
+        creator.GenerateMesh(0, subdivision, false);
+
+        removeSegmentButton.interactable = true;
     }
 
     public void OnRemoveSegmentClicked()
     {
-        if (road.Segments.Count <= 0)
+        creator.RemoveLastSegment();
+        if (creator.RawSegmentsCount <= 0)
         {
             removeSegmentButton.interactable = false;
         }
+        int subdivision = (int)tryGetFloat(subdivistionField.text, minSubdivition);
+        creator.GenerateMesh(0, subdivision, false);
     }
-
-
-
-    /// <summary>
-    /// 把角度限制在[0,360]之间
-    /// </summary>
-    /// <param name="angle">角度</param>
-    /// <returns>转换后的角度</returns>
-    private float ClampAngle(float angle)
-    {
-        while (angle >= 360)
-        {
-            angle -= 360;
-        }
-        while (angle < 0)
-        {
-            angle += 360;
-        }
-        return angle;
-    }
-    #endregion
-
-
-
-
-    #region  生成路面
-
-    public float minRoadWidth = 1;
-    public int minSubdivition = 2;
-    public int smoothMin = 10;
-    public int smoothMax = 50;
-
-    public InputField subdivistionField;
-    public Text smoothText;
-    public Slider smoothSlider;
 
     public void OnSubdivisionChanged(string newText)
     {
-        int division;
-        int.TryParse(newText, out division);
-
+        int division = (int)tryGetFloat(newText, minSubdivition);
         if (division < minSubdivition)
         {
-            subdivistionField.text = minSubdivition.ToString();
+            subdivistionField.text = division.ToString();
         }
     }
 
@@ -163,21 +161,21 @@ public class RoadCreator : MonoBehaviour
 
     public void Generate()
     {
-        //TODO
+        float smoothPercent = smoothSlider.value;
+        int subdivision = (int)tryGetFloat(subdivistionField.text, minSubdivition);
+        creator.GenerateMesh(smoothPercent, subdivision, true);
     }
-
-    #endregion
 
     void Awake()
     {
-        //segment
+        //road segment input fileds
         widthInputField.onEndEdit.AddListener(OnWidthChanged);
         lengthInputField.onEndEdit.AddListener(OnLengthChanged);
         pitchInputField.onEndEdit.AddListener(OnPitchChanged);
         rollInputField.onEndEdit.AddListener(OnRollChanged);
         angleInputField.onEndEdit.AddListener(OnAngleChanged);
         radiusInputField.onEndEdit.AddListener(OnAngleChanged);
-
+        //buttons
         addSegmentButton.onClick.AddListener(OnAddSegmentClicked);
         removeSegmentButton.onClick.AddListener(OnRemoveSegmentClicked);
         removeSegmentButton.interactable = false;
@@ -195,7 +193,5 @@ public class RoadCreator : MonoBehaviour
         float value;
         return float.TryParse(text, out value) ? value : defaultValue;
     }
-
-
 
 }

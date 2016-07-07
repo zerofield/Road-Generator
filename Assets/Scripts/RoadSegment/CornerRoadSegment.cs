@@ -2,6 +2,9 @@
 using System.Collections;
 using System;
 
+/// <summary>
+/// 转角路段
+/// </summary>
 public class CornerRoadSegment : BaseRoadSegment
 {
 
@@ -27,12 +30,12 @@ public class CornerRoadSegment : BaseRoadSegment
         throw new NotImplementedException();
     }
 
-    protected override void GenerateMesh(int subdivision)
+    public override float getY(float x, float z)
     {
         throw new NotImplementedException();
     }
 
-    public override float getY(float x, float z)
+    public override MeshData GenerateMesh(int subdivision, int baseIndex)
     {
         throw new NotImplementedException();
     }
