@@ -15,9 +15,11 @@ public class RoadCreator : MonoBehaviour
     public InputField widthInputField;
     public InputField lengthInputField;
     public InputField pitchInputField;
-    public InputField yawInputField;
     public InputField rollInputField;
+    public InputField angleInputField;
+    public InputField radiusInputField;
     public Button addSegmentButton;
+    public Button removeSegmentButton;
 
     public void OnWidthChanged(string newText)
     {
@@ -48,16 +50,26 @@ public class RoadCreator : MonoBehaviour
         pitchInputField.text = ClampAngle(angle).ToString();
     }
 
-    public void OnYawChanged(string newText)
-    {
-        float angle = tryGetFloat(newText, 0);
-        yawInputField.text = ClampAngle(angle).ToString();
-    }
-
     public void OnRollChanged(string newText)
     {
         float angle = tryGetFloat(newText, 0);
         rollInputField.text = ClampAngle(angle).ToString();
+    }
+
+    public void OnAngleChanged(string newText)
+    {
+        float angle = tryGetFloat(newText, 0);
+        angleInputField.text = ClampAngle(angle).ToString();
+    }
+
+    public void OnRadiusChanged(string newText)
+    {
+        float radius = tryGetFloat(newText, 0);
+        if (radius < 0)
+        {
+            radius = 0;
+        }
+        rollInputField.text = radius.ToString();
     }
 
     /// <summary>
@@ -68,7 +80,6 @@ public class RoadCreator : MonoBehaviour
         float width = tryGetFloat(widthInputField.text, minWidth);
         float length = tryGetFloat(lengthInputField.text, minLength);
         float pitch = tryGetFloat(pitchInputField.text, 0);
-        float yaw = tryGetFloat(yawInputField.text, 0);
         float roll = tryGetFloat(rollInputField.text, 0);
 
         int count = road.Segments.Count;
@@ -79,6 +90,7 @@ public class RoadCreator : MonoBehaviour
         {
             //TODO 决定第一个点的位置
             pointA = Vector3.zero;
+            removeSegmentButton.interactable = true;
         }
         else
         {
@@ -87,6 +99,14 @@ public class RoadCreator : MonoBehaviour
         Debug.Log("Add a road segment");
         RoadSegment newSegment = new RoadSegment(pointA, width, length, pitch, yaw, roll);
         road.Segments.Add(newSegment);
+    }
+
+    public void OnRemoveSegmentClicked()
+    {
+        if (road.Segments.Count <= 0)
+        {
+            removeSegmentButton.interactable = false;
+        }
     }
 
 
@@ -120,20 +140,9 @@ public class RoadCreator : MonoBehaviour
     public int smoothMin = 10;
     public int smoothMax = 50;
 
-    public InputField roadWidthInputField;
     public InputField subdivistionField;
     public Text smoothText;
     public Slider smoothSlider;
-
-
-    public void OnRoadWidthChanged(string newText)
-    {
-        float width = tryGetFloat(newText, minRoadWidth);
-        if (width < minRoadWidth)
-        {
-            roadWidthInputField.text = minRoadWidth.ToString();
-        }
-    }
 
     public void OnSubdivisionChanged(string newText)
     {
@@ -161,12 +170,18 @@ public class RoadCreator : MonoBehaviour
 
     void Awake()
     {
+        //segment
         widthInputField.onEndEdit.AddListener(OnWidthChanged);
         lengthInputField.onEndEdit.AddListener(OnLengthChanged);
         pitchInputField.onEndEdit.AddListener(OnPitchChanged);
-        yawInputField.onEndEdit.AddListener(OnYawChanged);
         rollInputField.onEndEdit.AddListener(OnRollChanged);
-        roadWidthInputField.onEndEdit.AddListener(OnRoadWidthChanged);
+        angleInputField.onEndEdit.AddListener(OnAngleChanged);
+        radiusInputField.onEndEdit.AddListener(OnAngleChanged);
+
+        addSegmentButton.onClick.AddListener(OnAddSegmentClicked);
+        removeSegmentButton.onClick.AddListener(OnRemoveSegmentClicked);
+        removeSegmentButton.interactable = false;
+        //road
         subdivistionField.onEndEdit.AddListener(OnSubdivisionChanged);
         smoothSlider.onValueChanged.AddListener(OnSmoothChanged);
         //
@@ -181,6 +196,6 @@ public class RoadCreator : MonoBehaviour
         return float.TryParse(text, out value) ? value : defaultValue;
     }
 
-  
+
 
 }

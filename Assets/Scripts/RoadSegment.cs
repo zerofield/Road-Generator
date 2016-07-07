@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class RoadSegment
+public abstract class AbstractRoadSegment
 {
     public Vector3 PointA
     {
