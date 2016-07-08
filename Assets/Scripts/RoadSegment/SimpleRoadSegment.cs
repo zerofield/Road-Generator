@@ -41,11 +41,11 @@ public class SimpleRoadSegment : BaseRoadSegment
 
         float halfWidth = roadWidth / 2;
 
-        Vector3 ll = pointA.position + (rotation * Vector3.left) * halfWidth;
-        Vector3 lr = pointA.position + (rotation * Vector3.right) * halfWidth;
+        Vector3 ll = pointA.position + rotation * Vector3.left * halfWidth;
+        Vector3 lr = pointA.position + rotation * Vector3.right * halfWidth;
 
-        Vector3 ul = pointB.position + (rotation * Vector3.left) * halfWidth;
-        Vector3 ur = pointB.position + (rotation * Vector3.right) * halfWidth;
+        Vector3 ul = pointB.position + rotation * Vector3.left * halfWidth;
+        Vector3 ur = pointB.position + rotation * Vector3.right * halfWidth;
 
         vertices.Add(ul);
         vertices.Add(ll);

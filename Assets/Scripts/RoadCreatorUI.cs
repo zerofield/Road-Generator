@@ -90,7 +90,7 @@ public class RoadCreatorUI : MonoBehaviour
     public void OnAddSegmentClicked()
     {
         float width = tryGetFloat(widthInputField.text, minWidth);
-       
+
         float length = tryGetFloat(lengthInputField.text, minLength);
         float pitch = tryGetFloat(pitchInputField.text, 0);
         float roll = tryGetFloat(rollInputField.text, 0);
@@ -119,12 +119,11 @@ public class RoadCreatorUI : MonoBehaviour
         //分为转弯和平面两个情况来考虑
         if (angle != 0 && radius > 0)    //转弯路面
         {
-            segment = null;
+            segment = new CornerRoadSegment(pointA, width, pitch, roll, radius, angle);
         }
         else //普通路面
         {
-            SimpleRoadSegment simpleRoadSegment = new SimpleRoadSegment(pointA, width, length, pitch, roll);
-            segment = simpleRoadSegment;
+            segment = new SimpleRoadSegment(pointA, width, length, pitch, roll);
         }
 
         creator.AddSegment(segment);
