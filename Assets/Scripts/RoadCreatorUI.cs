@@ -81,7 +81,7 @@ public class RoadCreatorUI : MonoBehaviour
         {
             radius = 0;
         }
-        rollInputField.text = radius.ToString();
+        radiusInputField.text = radius.ToString();
     }
 
     /// <summary>
@@ -173,7 +173,7 @@ public class RoadCreatorUI : MonoBehaviour
         pitchInputField.onEndEdit.AddListener(OnPitchChanged);
         rollInputField.onEndEdit.AddListener(OnRollChanged);
         angleInputField.onEndEdit.AddListener(OnAngleChanged);
-        radiusInputField.onEndEdit.AddListener(OnAngleChanged);
+        radiusInputField.onEndEdit.AddListener(OnRadiusChanged);
         //buttons
         addSegmentButton.onClick.AddListener(OnAddSegmentClicked);
         removeSegmentButton.onClick.AddListener(OnRemoveSegmentClicked);
