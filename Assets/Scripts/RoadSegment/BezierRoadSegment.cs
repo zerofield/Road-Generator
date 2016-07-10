@@ -7,8 +7,15 @@ using System;
 /// </summary>
 public class BezierRoadSegment : BaseRoadSegment
 {
-    public BezierRoadSegment(RoadPoint pointA, float roadWidth) : base(pointA, roadWidth)
+    //控制点
+    public Vector3 p0;
+    public Vector3 p1;
+    public Vector3 p2;
+    public Vector3 p3;
+
+    public BezierRoadSegment(RoadPoint pointA, RoadPoint pointB, float roadWidth) : base(pointA, roadWidth)
     {
+
     }
 
     public override MeshData GenerateMesh(int subdivision, int baseIndex)

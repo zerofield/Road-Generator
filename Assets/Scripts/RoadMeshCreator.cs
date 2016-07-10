@@ -107,7 +107,20 @@ public class RoadMeshCreator : MonoBehaviour
     {
         //TODO 
 
-        return rawSegments;
+        List<BaseRoadSegment> newSegments = new List<BaseRoadSegment>();
+
+        for (int i = 0; i < rawSegments.Count - 1; ++i)
+        {
+            BaseRoadSegment segment1 = rawSegments[i];
+            BaseRoadSegment segment2 = rawSegments[i + 1];
+
+           
+
+
+        }
+
+
+        return newSegments;
     }
 
 
