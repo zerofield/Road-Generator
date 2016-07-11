@@ -12,8 +12,8 @@ public enum SegmentType
 
 public struct MeshData
 {
-    List<Vector3> vertices;
-    List<int> triangle;
+    public List<Vector3> vertices;
+    public List<int> triangle;
 }
 
 public interface IRoadSegment
@@ -159,7 +159,8 @@ public abstract class SegmentNode : ICloneable, IRoadSegment
             triangles.Add(baseIndex + 2 * i + 1);
         }
         MeshData meshData = new MeshData();
-
+        meshData.vertices = vertices;
+        meshData.triangle = triangles;
         return meshData;
 
     }
@@ -200,10 +201,6 @@ public class StraightSegmentNode : SegmentNode
         endPoint = startPoint + rotation * Vector3.forward * length;
     }
 
-    public override object Clone()
-    {
-        throw new NotImplementedException();
-    }
 
     public override MeshData GenerateMesh(int subdivision, int baseIndex)
     {
@@ -225,6 +222,11 @@ public class StraightSegmentNode : SegmentNode
         return (endPoint - startPoint).normalized;
     }
 
+    public override object Clone()
+    {
+        return new StraightSegmentNode(type, width, startPoint, length, pitch, roll, yaw);
+    }
+
     #endregion
 }
 
@@ -238,6 +240,11 @@ public class IntersectionSegmentNode : StraightSegmentNode
     public IntersectionSegmentNode(float width, Vector3 startPoint, float length, float pitch, float roll, float yaw) : base(SegmentType.Intersection, width, startPoint, length, pitch, roll, yaw)
     {
         //TODO 增加控制点等信息
+    }
+
+    public override object Clone()
+    {
+        return new IntersectionSegmentNode(width, startPoint, length, pitch, roll, yaw);
     }
     #endregion
 }
@@ -288,7 +295,7 @@ public class SmoothSegmentNode : SegmentNode
 
     public override object Clone()
     {
-        throw new NotImplementedException();
+        return new SmoothSegmentNode(width, startPoint, midPoint, endPoint);
     }
     #endregion
 }
@@ -306,6 +313,23 @@ public class CornerSegmentNode : SegmentNode
     public float angle;
     public float radius;
 
+
+    //计算相关变量
+    private Quaternion planeRotation;
+    private Vector3 upwards;
+    private Vector3 downwards;
+
+    private Vector3 direction;
+
+    /// <summary>
+    /// 圆心
+    /// </summary>
+    private Vector3 circleCenterPoint;
+
+    /// <summary>
+    /// 圆心到起始点的矢量 
+    /// </summary>
+    private Vector3 centerToStartPoint;
     #endregion
 
     #region Methods
@@ -318,48 +342,60 @@ public class CornerSegmentNode : SegmentNode
         this.angle = angle;
         this.radius = radius;
 
-        //rotation
-        Quaternion rotation = Quaternion.Euler(pitch, yaw, 0); //roll 不进行旋转，roll只是用于决定三角形面的角度
+        //计算常用变量
+        planeRotation = Quaternion.Euler(pitch, yaw, 0); //roll 不进行旋转，roll只是用于决定三角形面的角度
+        upwards = planeRotation * Vector3.up;
+        downwards = planeRotation * Vector3.down;
+        direction = new Vector3(Mathf.Sign(angle), 0, 0);
+        circleCenterPoint = startPoint + planeRotation * direction * radius;
+        centerToStartPoint = (startPoint - circleCenterPoint).normalized;
+        //
+        endPoint = GetPosition(1.0f, 0);
+        Quaternion endRotation = GetRotation(1.0f);
+        endYaw = endRotation.eulerAngles.y;
 
-        //calculate endPoint
-        Vector3 direction = new Vector3(Mathf.Sign(angle), 0, 0);
-        Vector3 circleCenter = startPoint + rotation * direction * radius;
-
-        Vector3 upwards = rotation * Vector3.up;
-        Vector3 downwards = rotation * Vector3.down;
-
-        Quaternion endPointRotation = Quaternion.AngleAxis(angle, upwards);
-        endPoint = circleCenter + endPointRotation * ((startPoint - circleCenter).normalized) * radius;
-
-
-        Debug.DrawLine(startPoint, circleCenter, Color.red, 100);
-        Debug.DrawLine(endPoint, circleCenter, Color.red, 100);
+        Debug.DrawLine(startPoint, circleCenterPoint, Color.red, 1);
+        Debug.DrawLine(endPoint, circleCenterPoint, Color.red, 1);
 
     }
 
     public override Vector3 GetPosition(float t, float offset)
     {
-        throw new NotImplementedException();
+        t = Mathf.Clamp01(t);
+        Vector3 upwards = planeRotation * Vector3.up;
+        Quaternion angleRotation = Quaternion.AngleAxis(t * angle, upwards);
+        Vector3 pointPosition = circleCenterPoint + angleRotation * centerToStartPoint * radius;
+        Vector3 position = pointPosition + GetRotation(t) * Vector3.right * offset;
+        return position;
     }
 
     public override Vector3 GetTangent(float t)
     {
-        throw new NotImplementedException();
-    }
-
-    public override Quaternion GetRotation(float t)
-    {
-        return base.GetRotation(t) * Quaternion.Euler(0, 0, roll);
+        Quaternion angleRotation = Quaternion.AngleAxis(t * angle, upwards);
+        Vector3 pointPosition = circleCenterPoint + angleRotation * centerToStartPoint * radius;
+        Vector3 centerToPoint = pointPosition - circleCenterPoint;
+        Vector3 pointUpwards = angleRotation * Quaternion.Euler(0, 0, roll) * Vector3.up;
+        if (angle < 0)
+        {
+            return Vector3.Cross(centerToPoint, pointUpwards).normalized;
+        }
+        else
+        {
+            return Vector3.Cross(pointUpwards, centerToPoint).normalized;
+        }
     }
 
     public override Vector3 GetNormal(float t)
     {
-        return base.GetNormal(t);
+        t = Mathf.Clamp01(t);
+        Quaternion angleRotation = Quaternion.AngleAxis(t * angle, upwards);
+        Vector3 pointUpwards = (angleRotation * Quaternion.Euler(0, 0, roll) * Vector3.up).normalized;
+        return pointUpwards;
     }
 
     public override object Clone()
     {
-        throw new NotImplementedException();
+        return new CornerSegmentNode(width, startPoint, pitch, startYaw, roll, angle, radius);
     }
 
     #endregion
