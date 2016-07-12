@@ -40,6 +40,7 @@ public abstract class SegmentNode : ICloneable, IRoadSegment
     public Vector3 endPoint;
 
     public float width;
+    public float yaw;
 
     public SegmentNode parent;
 
@@ -101,6 +102,29 @@ public abstract class SegmentNode : ICloneable, IRoadSegment
         //other node
         newNode.AddNode(otherNode);
     }
+
+    /// <summary>
+    /// 移除节点并返回移除的结点索引
+    /// </summary>
+    /// <param name="node">节点</param>
+    /// <returns>该节点对应的索引</returns>
+    public int RemoveChild(SegmentNode node)
+    {
+
+        int index = -1;
+        for (int i = 0; i < children.Length; ++i)
+        {
+            if (children[i] == node)
+            {
+                children[i].parent = null;
+                children[i] = null;
+                index = i;
+                break;
+            }
+        }
+        return index;
+    }
+
 
     public virtual SegmentNode GetChild()
     {
@@ -182,13 +206,17 @@ public class StraightSegmentNode : SegmentNode
     public float length;
     public float pitch;
     public float roll;
-    public float yaw;
 
     private Quaternion rotation;
 
     #endregion
 
     #region Methods
+
+    public StraightSegmentNode(float width, Vector3 startPoint, float length, float pitch, float roll, float yaw) : this(SegmentType.Straight, width, startPoint, length, pitch, roll, yaw)
+    {
+
+    }
 
     public StraightSegmentNode(SegmentType type, float width, Vector3 startPoint, float length, float pitch, float roll, float yaw) : base(type, width, startPoint)
     {
@@ -209,7 +237,7 @@ public class StraightSegmentNode : SegmentNode
 
     public override Vector3 GetPosition(float t, float offset)
     {
-        return Vector3.Lerp(startPoint, endPoint, t);
+        return Vector3.Lerp(startPoint, endPoint, t) + GetRotation(t) * Vector3.right * offset;
     }
 
     public override Quaternion GetRotation(float t)
@@ -266,6 +294,9 @@ public class SmoothSegmentNode : SegmentNode
     {
         this.midPoint = midPoint;
         this.endPoint = endPoint;
+
+        Quaternion rotation = Quaternion.LookRotation(endPoint - startPoint, Vector3.up);
+        yaw = rotation.eulerAngles.y;
 
         bezierPoints = new Vector3[4];
         bezierPoints[0] = startPoint;
@@ -337,6 +368,7 @@ public class CornerSegmentNode : SegmentNode
     public CornerSegmentNode(float width, Vector3 startPoint, float pitch, float yaw, float roll, float angle, float radius) : base(SegmentType.Corner, width, startPoint)
     {
         this.pitch = pitch;
+        this.yaw = yaw;
         this.startYaw = yaw;
         this.roll = roll;
         this.angle = angle;
@@ -354,8 +386,8 @@ public class CornerSegmentNode : SegmentNode
         Quaternion endRotation = GetRotation(1.0f);
         endYaw = endRotation.eulerAngles.y;
 
-        Debug.DrawLine(startPoint, circleCenterPoint, Color.red, 1);
-        Debug.DrawLine(endPoint, circleCenterPoint, Color.red, 1);
+        Debug.DrawLine(startPoint, circleCenterPoint, Color.red, 30);
+        Debug.DrawLine(endPoint, circleCenterPoint, Color.red, 30);
 
     }
 

@@ -5,6 +5,16 @@ using System.Collections;
 public class RoadCreatorUI : MonoBehaviour
 {
 
+    /// <summary>
+    /// 当前被选中的节点
+    /// </summary>
+    private SegmentNode currentSelectedNode;
+
+    /// <summary>
+    /// 当前选中节点的子节点索引
+    /// </summary>
+    private int currentChildIndex;
+
     public RoadMeshCreator creator;
 
     #region 添加路段 
@@ -84,63 +94,6 @@ public class RoadCreatorUI : MonoBehaviour
         radiusInputField.text = radius.ToString();
     }
 
-    /// <summary>
-    /// 添加一个路段
-    /// </summary>
-    public void OnAddSegmentClicked()
-    {
-        float width = tryGetFloat(widthInputField.text, minWidth);
-        float length = tryGetFloat(lengthInputField.text, minLength);
-        float pitch = tryGetFloat(pitchInputField.text, 0);
-        float roll = tryGetFloat(rollInputField.text, 0);
-        float angle = tryGetFloat(angleInputField.text, 0);
-        float radius = tryGetFloat(radiusInputField.text, 0);
-        int subdivision = (int)tryGetFloat(subdivistionField.text, minSubdivition);
-
-        //RoadPoint pointA;
-
-        //int count = creator.RawSegmentsCount;
-        //BaseRoadSegment segment = null;
-
-        //if (count == 0)
-        //{
-        //    float tempPitch = 0;
-        //    float tempYaw = 0;
-        //    float tempRoll = 0;
-        //    pointA = new RoadPoint(Vector3.zero, tempPitch, tempYaw, tempRoll);
-        //}
-        //else
-        //{
-        //    pointA = creator.LastRoadSegment().pointB;
-        //}
-
-        ////分为转弯和平面两个情况来考虑
-        //if (angle != 0 && radius > 0)    //转弯路面
-        //{
-        //    segment = new CornerRoadSegment(pointA, width, pitch, roll, radius, angle);
-        //}
-        //else //普通路面
-        //{
-        //    segment = new SimpleRoadSegment(pointA, width, length, pitch, roll);
-        //}
-
-        //creator.AddSegment(segment);
-        //creator.GenerateMesh(0, subdivision, false);
-
-        //removeSegmentButton.interactable = true;
-    }
-
-    public void OnRemoveSegmentClicked()
-    {
-        //creator.RemoveLastSegment();
-        //if (creator.RawSegmentsCount <= 0)
-        //{
-        //    removeSegmentButton.interactable = false;
-        //}
-        //int subdivision = (int)tryGetFloat(subdivistionField.text, minSubdivition);
-        //creator.GenerateMesh(0, subdivision, false);
-    }
-
     public void OnSubdivisionChanged(string newText)
     {
         int division = (int)tryGetFloat(newText, minSubdivition);
@@ -156,12 +109,7 @@ public class RoadCreatorUI : MonoBehaviour
         smoothText.text = string.Format("Smooth\n({0}%)", ival);
     }
 
-    public void Generate()
-    {
-        float smoothPercent = smoothSlider.value;
-        int subdivision = (int)tryGetFloat(subdivistionField.text, minSubdivition);
-        creator.GenerateMesh(smoothPercent, subdivision, true);
-    }
+
 
     void Awake()
     {
@@ -189,6 +137,115 @@ public class RoadCreatorUI : MonoBehaviour
     {
         float value;
         return float.TryParse(text, out value) ? value : defaultValue;
+    }
+
+
+
+    /// <summary>
+    /// 添加一个路段
+    /// </summary>
+    public void OnAddSegmentClicked()
+    {
+
+        if (currentSelectedNode == null && creator.StartNode != null)
+        {
+            return;
+        }
+
+        float width = tryGetFloat(widthInputField.text, minWidth);
+        float length = tryGetFloat(lengthInputField.text, minLength);
+        float pitch = tryGetFloat(pitchInputField.text, 0);
+        float roll = tryGetFloat(rollInputField.text, 0);
+        float angle = tryGetFloat(angleInputField.text, 0);
+        float radius = tryGetFloat(radiusInputField.text, 0);
+
+        Vector3 startPoint = Vector3.zero;
+        float yaw = 0;
+
+
+        if (creator.StartNode == null)
+        {
+            startPoint = Vector3.zero;
+            yaw = 0;
+        }
+        else
+        {
+            startPoint = currentSelectedNode.endPoint;
+            if (currentSelectedNode is CornerSegmentNode)
+            {
+                yaw = ((CornerSegmentNode)currentSelectedNode).endYaw;
+            }
+            else
+            {
+                yaw = currentSelectedNode.yaw;
+            }
+        }
+
+        SegmentNode newNode;
+        //分为转弯和平面两个情况来考虑
+        if (angle != 0 && radius > 0)    //转弯路面
+        {
+            newNode = new CornerSegmentNode(width, startPoint, pitch, yaw, roll, angle, radius);
+        }
+        else //普通路面
+        {
+            newNode = new StraightSegmentNode(width, startPoint, length, pitch, roll, yaw);
+        }
+
+        if (creator.StartNode == null)
+        {
+            creator.StartNode = currentSelectedNode;
+        }
+        else
+        {
+            currentSelectedNode.AddNode(newNode, 0);
+        }
+
+        currentSelectedNode = newNode;
+
+        Generate();
+
+        removeSegmentButton.interactable = true;
+    }
+
+    public void Generate()
+    {
+        float smoothPercent = smoothSlider.value;
+        int subdivision = (int)tryGetFloat(subdivistionField.text, minSubdivition);
+        creator.GenerateMesh(smoothPercent, subdivision);
+    }
+
+    public void OnRemoveSegmentClicked()
+    {
+        if (currentSelectedNode == null)
+        {
+            removeSegmentButton.interactable = false;
+            return;
+        }
+        else if (currentSelectedNode == creator.StartNode)
+        {
+            creator.StartNode = null;
+            currentSelectedNode = null;
+            removeSegmentButton.interactable = false;
+        }
+        else
+        {
+            int index = 0;
+            //将子节点从父节点移除，并且设置父节点为选中节点
+            if (currentSelectedNode.parent != null)
+            {
+                index = currentSelectedNode.parent.RemoveChild(currentSelectedNode);
+            }
+
+            currentSelectedNode = currentSelectedNode.parent;
+        }
+    }
+
+
+    public void OnSelectionPointSelected(SegmentNode node, int index)
+    {
+        currentSelectedNode = node;
+        currentChildIndex = index;
     }
 
 }
