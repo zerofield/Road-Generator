@@ -170,12 +170,12 @@ public class RoadMeshCreator : MonoBehaviour
     /// <param name="smoothPercent">光滑比例</param>
     public void GenerateSmoothRoadMesh(int subdivision, float smoothPercent)
     {
-        if(StartNode == null)
+        if (StartNode == null)
         {
             return;
         }
 
-        SegmentNode newStartNode =  CopyRoad(StartNode);
+        SegmentNode newStartNode = CopyRoad(StartNode);
         GenerateSmoothRoad(newStartNode, smoothPercent);
 
         smoothPercent = Mathf.Clamp(smoothPercent, 0, 0.5f);
@@ -221,13 +221,76 @@ public class RoadMeshCreator : MonoBehaviour
 
                     SegmentType childType = childNode.type;
 
+                    if (type == SegmentType.Straight)
+                    {
+                        if (childType == SegmentType.Straight || childType == SegmentType.Intersection)
+                        {
 
+                        }
+                    }
+                    else if (type == SegmentType.Intersection)
+                    {
+                        if (childType == SegmentType.Straight || childType == SegmentType.Intersection)
+                        {
 
+                        }
+                        else if (childType == SegmentType.Straight)
+                        {
+
+                        }
+                    }
+                    else if (type == SegmentType.Smooth)
+                    {
+                        //如果是smooth类型，说明已经做过平滑处理，直接把child加入队列中
+                        queue.Enqueue(childNode);
+                        continue;
+                    }
+                    else if (type == SegmentType.Corner)
+                    {
+
+                    }
                 }
             }
         }
     }
 
+    bool IsSmoothNeeded(SegmentNode node1, SegmentNode node2)
+    {
+        float pitch1 = GetPitch(node1);
+        float pitch2 = GetPitch(node2);
+
+        float roll1 = GetRoll(node1);
+        float roll2 = GetRoll(node2);
+
+        return pitch1 != pitch2 || roll1 != roll2;
+    }
+
+    float GetPitch(SegmentNode node)
+    {
+        if (node.type == SegmentType.Straight || node.type == SegmentType.Intersection)
+        {
+            return ((StraightSegmentNode)node).pitch;
+        }
+        else if (node.type == SegmentType.Corner)
+        {
+            return ((CornerSegmentNode)node).pitch;
+        }
+
+        return 0;
+    }
+
+    float GetRoll(SegmentNode node)
+    {
+        if (node.type == SegmentType.Straight || node.type == SegmentType.Intersection)
+        {
+            return ((StraightSegmentNode)node).roll;
+        }
+        else if (node.type == SegmentType.Corner)
+        {
+            return ((CornerSegmentNode)node).roll;
+        }
+        return 0;
+    }
 
 
 }
