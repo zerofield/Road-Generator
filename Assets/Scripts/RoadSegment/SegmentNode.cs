@@ -27,7 +27,6 @@ public interface IRoadSegment
     Quaternion GetRotation(float t);
 
     MeshData GenerateMesh(int subdivision, int baseIndex);
-
 }
 
 public abstract class SegmentNode : ICloneable, IRoadSegment
@@ -195,7 +194,6 @@ public abstract class SegmentNode : ICloneable, IRoadSegment
 
     public abstract Vector3 GetTangent(float t);
 
-
     #endregion
 }
 
@@ -252,7 +250,25 @@ public class StraightSegmentNode : SegmentNode
 
     public override object Clone()
     {
-        return new StraightSegmentNode(type, width, startPoint, length, pitch, roll, yaw);
+        SegmentNode node = new StraightSegmentNode(type, width, startPoint, length, pitch, roll, yaw);
+        //复制父子节点
+        node.parent = parent;
+        children.CopyTo(node.children, 0);
+        return node;
+    }
+
+    public virtual void ShrinkStartPoint(float percent)
+    {
+        percent = Mathf.Clamp01(percent);
+        startPoint = startPoint + (endPoint - startPoint).normalized * (1 - percent) * length;
+        length *= (1 - percent);
+    }
+
+    public virtual void ShrinkEndPoint(float percent)
+    {
+        percent = Mathf.Clamp01(percent);
+        endPoint = endPoint - (endPoint - startPoint).normalized * (1 - percent) * length;
+        length *= (1 - percent);
     }
 
     #endregion
@@ -272,7 +288,11 @@ public class IntersectionSegmentNode : StraightSegmentNode
 
     public override object Clone()
     {
-        return new IntersectionSegmentNode(width, startPoint, length, pitch, roll, yaw);
+        SegmentNode node = new IntersectionSegmentNode(width, startPoint, length, pitch, roll, yaw);
+        //复制父子节点
+        node.parent = parent;
+        children.CopyTo(node.children, 0);
+        return node;
     }
     #endregion
 }
@@ -326,8 +346,13 @@ public class SmoothSegmentNode : SegmentNode
 
     public override object Clone()
     {
-        return new SmoothSegmentNode(width, startPoint, midPoint, endPoint);
+        SegmentNode node = new SmoothSegmentNode(width, startPoint, midPoint, endPoint);
+        //复制父子节点
+        node.parent = parent;
+        children.CopyTo(node.children, 0);
+        return node;
     }
+
     #endregion
 }
 
@@ -427,7 +452,11 @@ public class CornerSegmentNode : SegmentNode
 
     public override object Clone()
     {
-        return new CornerSegmentNode(width, startPoint, pitch, startYaw, roll, angle, radius);
+        SegmentNode node = new CornerSegmentNode(width, startPoint, pitch, startYaw, roll, angle, radius);
+        //复制父子节点
+        node.parent = parent;
+        children.CopyTo(node.children, 0);
+        return node;
     }
 
     #endregion
