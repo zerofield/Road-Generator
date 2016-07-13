@@ -33,6 +33,8 @@ public abstract class SegmentNode : ICloneable, IRoadSegment
 {
     #region Fields
 
+    public const int DEFAULT_CHILD_INDEX = 0;
+
     public SegmentType type;
 
     public Vector3 startPoint;
@@ -205,7 +207,7 @@ public class StraightSegmentNode : SegmentNode
     public float pitch;
     public float roll;
 
-    private Quaternion rotation;
+    protected Quaternion rotation;
 
     #endregion
 
@@ -278,12 +280,30 @@ public class IntersectionSegmentNode : StraightSegmentNode
 {
     #region Fields
 
+    public Vector3 centerLeft;
+
+    public Vector3 centerRight;
+
+    public Quaternion centerLeftRotation;
+    public Quaternion centerRightRotation;
+
+    public const int INDEX_CENTER = 0;
+    public const int INDEX_CENTER_LEFT = 1;
+    public const int INDEX_CENTER_RIGHT = 2;
+
     #endregion
 
     #region Methods
     public IntersectionSegmentNode(float width, Vector3 startPoint, float length, float pitch, float roll, float yaw) : base(SegmentType.Intersection, width, startPoint, length, pitch, roll, yaw)
     {
         //TODO 增加控制点等信息
+        Vector3 center = (startPoint + endPoint) / 2;
+        centerLeft = center + rotation * Vector3.left * width / 2;
+        centerRight = center + rotation * Vector3.right * width / 2;
+
+        centerLeftRotation = rotation * Quaternion.Euler(0, -90, 0);
+        centerRightRotation = rotation * Quaternion.Euler(0, 90, 0);
+
     }
 
     public override object Clone()

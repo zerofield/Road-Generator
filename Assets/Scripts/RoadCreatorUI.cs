@@ -5,6 +5,8 @@ using System.Collections.Generic;
 public class RoadCreatorUI : MonoBehaviour
 {
 
+
+
     /// <summary>
     /// 当前被选中的节点
     /// </summary>
@@ -32,6 +34,7 @@ public class RoadCreatorUI : MonoBehaviour
     public InputField angleInputField;
     public InputField radiusInputField;
     public Button addSegmentButton;
+    public Button addIntersectionButton;
     public Button removeSegmentButton;
     #endregion
 
@@ -126,6 +129,7 @@ public class RoadCreatorUI : MonoBehaviour
         radiusInputField.onEndEdit.AddListener(OnRadiusChanged);
         //buttons
         addSegmentButton.onClick.AddListener(OnAddSegmentClicked);
+        addIntersectionButton.onClick.AddListener(OnAddIntersectionClicked);
         removeSegmentButton.onClick.AddListener(OnRemoveSegmentClicked);
         removeSegmentButton.interactable = false;
         //road
@@ -144,13 +148,29 @@ public class RoadCreatorUI : MonoBehaviour
     }
 
 
-
     /// <summary>
     /// 添加一个路段
     /// </summary>
     public void OnAddSegmentClicked()
     {
+        AddSegment(false);
 
+    }
+
+    /// <summary>
+    /// 添加一个十字路
+    /// </summary>
+    public void OnAddIntersectionClicked()
+    {
+        AddSegment(true);
+    }
+
+    /// <summary>
+    /// 添加一个路段信息
+    /// </summary>
+    /// <param name="isAddIntersection">是否为添加分叉路段</param>
+    void AddSegment(bool isAddIntersection)
+    {
         if (currentSelectedNode == null && creator.StartNode != null)
         {
             return;
@@ -166,7 +186,7 @@ public class RoadCreatorUI : MonoBehaviour
         Vector3 startPoint = Vector3.zero;
         float yaw = 0;
 
-
+        //TODO 处理没有任何路段的情况
         if (creator.StartNode == null)
         {
             startPoint = Vector3.zero;
@@ -175,7 +195,28 @@ public class RoadCreatorUI : MonoBehaviour
         else
         {
             startPoint = currentSelectedNode.endPoint;
-            if (currentSelectedNode is CornerSegmentNode)
+
+            if (currentSelectedNode is IntersectionSegmentNode)
+            {
+                IntersectionSegmentNode interNode = (IntersectionSegmentNode)currentSelectedNode;
+                switch (currentChildIndex)
+                {
+                    case IntersectionSegmentNode.INDEX_CENTER:
+                        startPoint = interNode.endPoint;
+                        yaw = interNode.yaw;
+                        break;
+                    case IntersectionSegmentNode.INDEX_CENTER_LEFT:
+                        startPoint = interNode.centerLeft;
+                        yaw = interNode.centerLeftRotation.eulerAngles.y;
+                        break;
+                    case IntersectionSegmentNode.INDEX_CENTER_RIGHT:
+                        startPoint = interNode.centerRight;
+                        yaw = interNode.centerRightRotation.eulerAngles.y;
+                        break;
+                }
+
+            }
+            else if (currentSelectedNode is CornerSegmentNode)
             {
                 yaw = ((CornerSegmentNode)currentSelectedNode).endYaw;
             }
@@ -186,41 +227,62 @@ public class RoadCreatorUI : MonoBehaviour
         }
 
         SegmentNode newNode;
-        //分为转弯和平面两个情况来考虑
-        if (angle != 0 && radius > 0)    //转弯路面
+
+        if (isAddIntersection)//添加交叉路段
         {
-            newNode = new CornerSegmentNode(width, startPoint, pitch, yaw, roll, angle, radius);
+            newNode = new IntersectionSegmentNode(width, startPoint, length, pitch, roll, yaw);
+
         }
-        else //普通路面
-        {
-            newNode = new StraightSegmentNode(width, startPoint, length, pitch, roll, yaw);
+        else
+        {//添加普通路段
+
+            //分为转弯和平面两个情况来考虑
+            if (angle != 0 && radius > 0)    //转弯路面
+            {
+                newNode = new CornerSegmentNode(width, startPoint, pitch, yaw, roll, angle, radius);
+            }
+            else //普通路面
+            {
+                newNode = new StraightSegmentNode(width, startPoint, length, pitch, roll, yaw);
+            }
         }
 
         if (creator.StartNode == null)
         {
             creator.StartNode = newNode;
+            currentChildIndex = SegmentNode.DEFAULT_CHILD_INDEX;
         }
         else
         {
-            currentSelectedNode.AddNode(newNode, 0);
+            currentSelectedNode.AddNode(newNode, currentChildIndex);
+        }
+
+        if (isAddIntersection)
+        {
+            currentChildIndex = IntersectionSegmentNode.INDEX_CENTER;
+        }
+        else
+        {
+            currentChildIndex = SegmentNode.DEFAULT_CHILD_INDEX;
         }
 
         currentSelectedNode = newNode;
-
-        Generate();
-
+        GenerateRawMesh();
         CreateSelectionPoints();
-
         removeSegmentButton.interactable = true;
     }
 
-    public void Generate()
+    /// <summary>
+    /// 创建原始网格模型
+    /// </summary>
+    void GenerateRawMesh()
     {
-        float smoothPercent = smoothSlider.value;
-        int subdivision = (int)tryGetFloat(subdivistionField.text, minSubdivition);
-        creator.GenerateMesh(smoothPercent, subdivision);
+        creator.GenerateRawMesh(10);
     }
 
+    /// <summary>
+    /// 移除
+    /// </summary>
     public void OnRemoveSegmentClicked()
     {
         if (currentSelectedNode == null)
@@ -228,26 +290,32 @@ public class RoadCreatorUI : MonoBehaviour
             removeSegmentButton.interactable = false;
             return;
         }
-        else if (currentSelectedNode == creator.StartNode)
+        else if (currentSelectedNode == creator.StartNode) //只有一个节点的情况
         {
             creator.StartNode = null;
             currentSelectedNode = null;
             removeSegmentButton.interactable = false;
+            currentChildIndex = SegmentNode.DEFAULT_CHILD_INDEX; ;
         }
         else
         {
-            int index = 0;
+            int index = SegmentNode.DEFAULT_CHILD_INDEX;
             //将子节点从父节点移除，并且设置父节点为选中节点
-            if (currentSelectedNode.parent != null)
+            SegmentNode parent = currentSelectedNode.parent;
+
+            if (parent != null)
             {
-                index = currentSelectedNode.parent.RemoveChild(currentSelectedNode);
+                index = parent.RemoveChild(currentSelectedNode);
+
             }
 
-            currentSelectedNode = currentSelectedNode.parent;
+            currentSelectedNode = parent;
+            currentChildIndex = index;
         }
+
+        GenerateRawMesh();
+        CreateSelectionPoints();
     }
-
-
 
     /// <summary>
     /// 创建路段最末端选择节点
@@ -257,6 +325,7 @@ public class RoadCreatorUI : MonoBehaviour
         for (int i = 0; i < selectionPoints.Count; ++i)
         {
             Destroy(selectionPoints[i].gameObject);
+            //TODO 改成Object Pool
         }
 
         selectionPoints.Clear();
@@ -271,7 +340,24 @@ public class RoadCreatorUI : MonoBehaviour
 
                 if (node.type == SegmentType.Intersection) //交叉路口，会有三个选择点
                 {
-                    //TODO
+                    IntersectionSegmentNode intersectionNode = node as IntersectionSegmentNode;
+                    RoadSelectionPoint point = makeIntersectionSelectionPoint(intersectionNode, IntersectionSegmentNode.INDEX_CENTER);
+                    if (point != null)
+                    {
+                        selectionPoints.Add(point);
+                    }
+                    point = makeIntersectionSelectionPoint(intersectionNode, IntersectionSegmentNode.INDEX_CENTER_LEFT);
+                    if (point != null)
+                    {
+                        selectionPoints.Add(point);
+
+                    }
+                    point = makeIntersectionSelectionPoint(intersectionNode, IntersectionSegmentNode.INDEX_CENTER_RIGHT);
+                    if (point != null)
+                    {
+                        selectionPoints.Add(point);
+
+                    }
                 }
                 else//普通路面只有一个点
                 {
@@ -280,12 +366,46 @@ public class RoadCreatorUI : MonoBehaviour
                     point.transform.position = node.endPoint;
                     SetSelectionPointColor(point);
                     selectionPoints.Add(point);
-
-
                 }
             }
         }
     }
+
+    /// <summary>
+    /// 创建分叉路段选择点
+    /// </summary>
+    /// <param name="intersectionNode"></param>
+    /// <param name="index"></param>
+    /// <returns></returns>
+    RoadSelectionPoint makeIntersectionSelectionPoint(IntersectionSegmentNode intersectionNode, int index)
+    {
+        if (intersectionNode.children[index] != null)
+        {
+            return null;
+        }
+
+        RoadSelectionPoint point = Instantiate<RoadSelectionPoint>(selectionPointPrefab);
+        point.Initialize(this, intersectionNode, index);
+        Vector3 position = Vector3.zero;
+
+        switch (index)
+        {
+            case IntersectionSegmentNode.INDEX_CENTER:
+                position = intersectionNode.endPoint;
+                break;
+            case IntersectionSegmentNode.INDEX_CENTER_LEFT:
+                position = intersectionNode.centerLeft;
+                break;
+            case IntersectionSegmentNode.INDEX_CENTER_RIGHT:
+                position = intersectionNode.centerRight;
+                break;
+        }
+
+        point.transform.position = position;
+        SetSelectionPointColor(point);
+        return point;
+    }
+
 
     /// <summary>
     /// 选择点被选择回调方法

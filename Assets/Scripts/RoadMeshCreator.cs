@@ -49,11 +49,6 @@ public class RoadMeshCreator : MonoBehaviour
             return;
         }
 
-        if (node.children == null && !outList.Contains(node))
-        {
-            outList.Add(node);
-        }
-
         for (int i = 0; i < node.children.Length; ++i)
         {
             SegmentNode child = node.children[i];
@@ -76,14 +71,13 @@ public class RoadMeshCreator : MonoBehaviour
     /// </summary>
     /// <param name="smoothPercent">路段平滑百分比，大于等于0小于0.5</param>
     /// <param name="subdivision">表面分段数，大于等于2</param>
-    public void GenerateMesh(float smoothPercent, int subdivision)
+    public void GenerateRawMesh(int subdivision)
     {
-        smoothPercent = Mathf.Clamp(smoothPercent, 0, 0.5f);
         subdivision = Mathf.Clamp(subdivision, 2, int.MaxValue);
 
         List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
-        Generate(smoothPercent, subdivision, StartNode, vertices, triangles);
+        GenerateMesh(subdivision, StartNode, vertices, triangles);
 
 
         Mesh mesh = new Mesh();
@@ -105,12 +99,13 @@ public class RoadMeshCreator : MonoBehaviour
     /// <param name="node"></param>
     /// <param name="vertices"></param>
     /// <param name="triangles"></param>
-    void Generate(float smoothPercent, int subdivision, SegmentNode node, List<Vector3> vertices, List<int> triangles)
+    void GenerateMesh(int subdivision, SegmentNode node, List<Vector3> vertices, List<int> triangles)
     {
         if (node == null)
         {
             return;
         }
+        subdivision = Mathf.Clamp(subdivision, 2, int.MaxValue);
 
         MeshData meshData = node.GenerateMesh(subdivision, vertices.Count);
         vertices.AddRange(meshData.vertices);
@@ -122,12 +117,10 @@ public class RoadMeshCreator : MonoBehaviour
             {
                 if (node.children[i] != null)
                 {
-                    Generate(smoothPercent, subdivision, node.children[i], vertices, triangles);
+                    GenerateMesh(subdivision, node.children[i], vertices, triangles);
                 }
             }
-
         }
-
     }
 
     /// <summary>
@@ -175,15 +168,15 @@ public class RoadMeshCreator : MonoBehaviour
             return;
         }
 
-        SegmentNode newStartNode = CopyRoad(StartNode);
-        GenerateSmoothRoad(newStartNode, smoothPercent);
-
         smoothPercent = Mathf.Clamp(smoothPercent, 0, 0.5f);
         subdivision = Mathf.Clamp(subdivision, 2, int.MaxValue);
 
+        SegmentNode newStartNode = CopyRoad(StartNode);
+        GenerateSmoothRoad(newStartNode, smoothPercent);
+
         List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
-        Generate(smoothPercent, subdivision, newStartNode, vertices, triangles);
+        GenerateMesh(subdivision, newStartNode, vertices, triangles);
 
         Mesh mesh = new Mesh();
         mesh.vertices = vertices.ToArray();
