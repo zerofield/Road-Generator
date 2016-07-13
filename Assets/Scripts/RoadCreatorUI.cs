@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
-using System.Collections;
+using System.Collections.Generic;
 
 public class RoadCreatorUI : MonoBehaviour
 {
@@ -14,6 +14,10 @@ public class RoadCreatorUI : MonoBehaviour
     /// 当前选中节点的子节点索引
     /// </summary>
     private int currentChildIndex;
+
+    private List<RoadSelectionPoint> selectionPoints = new List<RoadSelectionPoint>();
+
+    public RoadSelectionPoint selectionPointPrefab;
 
     public RoadMeshCreator creator;
 
@@ -194,7 +198,7 @@ public class RoadCreatorUI : MonoBehaviour
 
         if (creator.StartNode == null)
         {
-            creator.StartNode = currentSelectedNode;
+            creator.StartNode = newNode;
         }
         else
         {
@@ -204,6 +208,8 @@ public class RoadCreatorUI : MonoBehaviour
         currentSelectedNode = newNode;
 
         Generate();
+
+        CreateSelectionPoints();
 
         removeSegmentButton.interactable = true;
     }
@@ -242,10 +248,77 @@ public class RoadCreatorUI : MonoBehaviour
     }
 
 
-    public void OnSelectionPointSelected(SegmentNode node, int index)
+
+    /// <summary>
+    /// 创建路段最末端选择节点
+    /// </summary>
+    private void CreateSelectionPoints()
     {
-        currentSelectedNode = node;
-        currentChildIndex = index;
+        for (int i = 0; i < selectionPoints.Count; ++i)
+        {
+            Destroy(selectionPoints[i].gameObject);
+        }
+
+        selectionPoints.Clear();
+
+        List<SegmentNode> nodeList = creator.GetEndPointSegments();
+
+        if (nodeList != null)
+        {
+            for (int i = 0; i < nodeList.Count; ++i)
+            {
+                SegmentNode node = nodeList[i];
+
+                if (node.type == SegmentType.Intersection) //交叉路口，会有三个选择点
+                {
+                    //TODO
+                }
+                else//普通路面只有一个点
+                {
+                    RoadSelectionPoint point = Instantiate<RoadSelectionPoint>(selectionPointPrefab);
+                    point.Initialize(this, node, 0);
+                    point.transform.position = node.endPoint;
+                    SetSelectionPointColor(point);
+                    selectionPoints.Add(point);
+
+
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 选择点被选择回调方法
+    /// </summary>
+    /// <param name="point"></param>
+    public void OnSelectionPointSelected(RoadSelectionPoint point)
+    {
+        currentSelectedNode = point.node;
+        currentChildIndex = point.index;
+
+        // 改变颜色
+        for (int i = 0; i < selectionPoints.Count; ++i)
+        {
+            SetSelectionPointColor(selectionPoints[i]);
+        }
+    }
+
+
+    /// <summary>
+    /// 设置选择点的颜色
+    /// </summary>
+    /// <param name="point"></param>
+    private void SetSelectionPointColor(RoadSelectionPoint point)
+    {
+        //设置颜色
+        if (point.node == currentSelectedNode && point.index == currentChildIndex)
+        {
+            point.SetColor(Color.red);
+        }
+        else
+        {
+            point.SetColor(Color.gray);
+        }
     }
 
 }

@@ -64,7 +64,7 @@ public class RoadMeshCreator : MonoBehaviour
             }
             else
             {
-                GetEndPointSegments(node, outList);
+                GetEndPointSegments(child, outList);
             }
         }
     }

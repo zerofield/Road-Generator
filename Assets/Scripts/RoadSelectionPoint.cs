@@ -21,11 +21,17 @@ public class RoadSelectionPoint : MonoBehaviour
         this.index = index;
     }
 
+    public void SetColor(Color color)
+    {
+        MeshRenderer renderer = GetComponent<MeshRenderer>();
+        renderer.material.color = color;
+    }
+
     void OnMouseUp()
     {
         if (creatorUI != null)
         {
-            creatorUI.OnSelectionPointSelected(this.node, index);
+            creatorUI.OnSelectionPointSelected(this);
         }
     }
 }
