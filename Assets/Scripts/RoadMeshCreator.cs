@@ -90,7 +90,6 @@ public class RoadMeshCreator : MonoBehaviour
     }
 
 
-
     /// <summary>
     /// 递归生成
     /// </summary>
@@ -194,7 +193,7 @@ public class RoadMeshCreator : MonoBehaviour
             queue.Enqueue(StartNode);
         }
 
-        //bfs 平滑
+        //Bredth First 
         while (queue.Count > 0)
         {
             SegmentNode node = queue.Dequeue();
@@ -215,17 +214,37 @@ public class RoadMeshCreator : MonoBehaviour
                     continue;
                 }
 
-                if (!IsSmoothNeeded(node, index))
+                if (IsSmoothNeeded(node, index))
                 {
-                    continue;
+                    //拆分路段
+
+                    //分交叉路段和普通路段来处理
+                    if (node.type == SegmentType.Intersection)
+                    {
+
+                    }
+                    else
+                    {
+                        Vector3 oldEndPoint = node.endPoint;
+                        Vector3 oldChildStartPoint = child.startPoint;
+
+                        node.ShrinkEndPoint(smooth);
+                        child.ShrinkStartPoint(smooth);
+
+                        //TODO 处理corner 的控制点问题
+
+                        //目前使用两个路段之间最大值作为过渡
+                        float width = Mathf.Max(node.width, child.width);
+
+                        SmoothSegmentNode smoothNode = new SmoothSegmentNode(width, node.endPoint, oldEndPoint, child.startPoint, oldChildStartPoint, node.GetRoll(1f), child.GetRoll(0f));
+
+                        //插入节点，重建树的层级关系
+                        smoothNode.AddNode(child, 0);
+                        node.AddNode(smoothNode, index);
+                    }
                 }
-                else
-                {
-                    //拆分
 
-
-                }
-
+                //跳过平滑段，直接添加实际处理段
                 queue.Enqueue(child);
             }
         }
@@ -234,7 +253,7 @@ public class RoadMeshCreator : MonoBehaviour
     bool IsSmoothNeeded(SegmentNode parent, int index)
     {
 
-        if (parent == null || parent.children == null)
+        if (parent == null || parent.children == null || parent.type == SegmentType.Smooth)//smooth不可再分
         {
             return false;
         }

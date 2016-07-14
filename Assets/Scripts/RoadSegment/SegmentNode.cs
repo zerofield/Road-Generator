@@ -20,6 +20,8 @@ public interface IRoadSegment
 {
     Vector3 GetPosition(float t, float offset);
 
+    float GetRoll(float t);
+
     Vector3 GetNormal(float t);
 
     Vector3 GetTangent(float t);
@@ -201,6 +203,7 @@ public abstract class SegmentNode : ICloneable, IRoadSegment
     public abstract Vector3 GetTangent(float t);
     public abstract void ShrinkStartPoint(float percent);
     public abstract void ShrinkEndPoint(float percent);
+    public abstract float GetRoll(float t);
 
     #endregion
 }
@@ -274,6 +277,11 @@ public class StraightSegmentNode : SegmentNode
         percent = Mathf.Clamp01(percent);
         endPoint = endPoint - (endPoint - startPoint).normalized * (1 - percent) * length;
         length *= (1 - percent);
+    }
+
+    public override float GetRoll(float t)
+    {
+        return roll;
     }
 
     #endregion
@@ -354,11 +362,11 @@ public class SmoothSegmentNode : SegmentNode
     {
         t = Mathf.Clamp01(t);
         Vector3 centerPoint = BezierCurve.GetPoint(bezierPoints, t);
-        Quaternion rotation = GetRotation(t) * Quaternion.Euler(0, 0, getRoll(t));
+        Quaternion rotation = GetRotation(t) * Quaternion.Euler(0, 0, GetRoll(t));
         return centerPoint + rotation * Vector3.right * offset;
     }
 
-    public float getRoll(float t)
+    public override float GetRoll(float t)
     {
         t = Mathf.Clamp01(t);
         return Mathf.Lerp(startRoll, endRoll, t);
@@ -513,6 +521,11 @@ public class CornerSegmentNode : SegmentNode
         angle *= (1 - percent);
 
         Debug.DrawLine(endPoint, circleCenterPoint, Color.blue, 30);
+    }
+
+    public override float GetRoll(float t)
+    {
+        return roll;
     }
 
     #endregion
