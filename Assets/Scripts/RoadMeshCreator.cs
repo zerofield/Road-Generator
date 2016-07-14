@@ -130,29 +130,22 @@ public class RoadMeshCreator : MonoBehaviour
     /// <returns></returns>
     SegmentNode CopyRoad(SegmentNode node)
     {
-
-        Queue<SegmentNode> queue = new Queue<SegmentNode>();
-        SegmentNode newStartNode = (SegmentNode)node.Clone();
-        queue.Enqueue(newStartNode);
-
-        while (queue.Count > 0)
+        if (node == null)
         {
-            SegmentNode currentNode = queue.Dequeue();
+            return null;
+        }
 
-            if (currentNode.children != null)
+        SegmentNode parent = (SegmentNode)node.Clone();
+
+        if (node.children != null)
+        {
+            for (int i = 0; i < node.children.Length; ++i)
             {
-                for (int i = 0; i < currentNode.children.Length; ++i)
-                {
-                    if (currentNode.children[i] != null)
-                    {
-                        SegmentNode childNode = (SegmentNode)currentNode.children[i].Clone();
-                        currentNode.AddNode(childNode, i);
-                        queue.Enqueue(childNode);
-                    }
-                }
+                SegmentNode child = node.children[i];
+                parent.AddNode(CopyRoad(child), i);
             }
         }
-        return newStartNode;
+        return parent;
     }
 
 
@@ -172,7 +165,7 @@ public class RoadMeshCreator : MonoBehaviour
         subdivision = Mathf.Clamp(subdivision, 2, int.MaxValue);
 
         SegmentNode newStartNode = CopyRoad(StartNode);
-        GenerateSmoothRoad(newStartNode, smoothPercent);
+        GenerateSmoothRoadSegmentNode(newStartNode, smoothPercent);
 
         List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
@@ -187,7 +180,12 @@ public class RoadMeshCreator : MonoBehaviour
         meshFilter.mesh = mesh;
     }
 
-    public void GenerateSmoothRoad(SegmentNode startNode, float smooth)
+    /// <summary>
+    /// 生成光滑路面节点
+    /// </summary>
+    /// <param name="startNode">初始节点</param>
+    /// <param name="smooth">光滑程度</param>
+    public void GenerateSmoothRoadSegmentNode(SegmentNode startNode, float smooth)
     {
         Queue<SegmentNode> queue = new Queue<SegmentNode>();
 
@@ -196,69 +194,65 @@ public class RoadMeshCreator : MonoBehaviour
             queue.Enqueue(StartNode);
         }
 
+        //bfs 平滑
         while (queue.Count > 0)
         {
             SegmentNode node = queue.Dequeue();
 
             SegmentType type = node.type;
 
-            if (node.children != null)
+            if (node.children == null)
             {
-                for (int i = 0; i < node.children.Length; ++i)
+                continue;
+            }
+
+            for (int index = 0; index < node.children.Length; ++index)
+            {
+                SegmentNode child = node.children[index];
+
+                if (child == null)
                 {
-                    SegmentNode childNode = node.children[i];
-                    if (childNode == null)
-                    {
-                        continue;
-                    }
-
-                    SegmentType childType = childNode.type;
-
-                    if (type == SegmentType.Straight)
-                    {
-                        if (childType == SegmentType.Straight || childType == SegmentType.Intersection)
-                        {
-
-                        }
-                    }
-                    else if (type == SegmentType.Intersection)
-                    {
-                        if (childType == SegmentType.Straight || childType == SegmentType.Intersection)
-                        {
-
-                        }
-                        else if (childType == SegmentType.Straight)
-                        {
-
-                        }
-                    }
-                    else if (type == SegmentType.Smooth)
-                    {
-                        //如果是smooth类型，说明已经做过平滑处理，直接把child加入队列中
-                        queue.Enqueue(childNode);
-                        continue;
-                    }
-                    else if (type == SegmentType.Corner)
-                    {
-
-                    }
+                    continue;
                 }
+
+                if (!IsSmoothNeeded(node, index))
+                {
+                    continue;
+                }
+                else
+                {
+                    //拆分
+
+
+                }
+
+                queue.Enqueue(child);
             }
         }
     }
 
-    bool IsSmoothNeeded(SegmentNode node1, SegmentNode node2)
+    bool IsSmoothNeeded(SegmentNode parent, int index)
     {
-        float pitch1 = GetPitch(node1);
-        float pitch2 = GetPitch(node2);
 
-        float roll1 = GetRoll(node1);
-        float roll2 = GetRoll(node2);
+        if (parent == null || parent.children == null)
+        {
+            return false;
+        }
 
-        return pitch1 != pitch2 || roll1 != roll2;
+        SegmentNode child = parent.children[index];
+
+        if (child == null)
+        {
+            return false;
+        }
+
+        //TODO
+
+
+        return true;
     }
 
-    float GetPitch(SegmentNode node)
+    float GetPitch(SegmentNode node, int index)
     {
         if (node.type == SegmentType.Straight || node.type == SegmentType.Intersection)
         {
@@ -272,7 +266,7 @@ public class RoadMeshCreator : MonoBehaviour
         return 0;
     }
 
-    float GetRoll(SegmentNode node)
+    float GetRoll(SegmentNode node, int index)
     {
         if (node.type == SegmentType.Straight || node.type == SegmentType.Intersection)
         {
