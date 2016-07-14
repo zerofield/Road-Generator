@@ -74,18 +74,14 @@ public class RoadMeshCreator : MonoBehaviour
     public void GenerateRawMesh(int subdivision)
     {
         subdivision = Mathf.Clamp(subdivision, 2, int.MaxValue);
-
         List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
         GenerateMesh(subdivision, StartNode, vertices, triangles);
-
-
         Mesh mesh = new Mesh();
         mesh.vertices = vertices.ToArray();
         mesh.triangles = triangles.ToArray();
         mesh.RecalculateBounds();
         mesh.RecalculateNormals();
-
         meshFilter.mesh = mesh;
     }
 
@@ -134,17 +130,17 @@ public class RoadMeshCreator : MonoBehaviour
             return null;
         }
 
-        SegmentNode parent = (SegmentNode)node.Clone();
+        SegmentNode newNode = (SegmentNode)node.Clone();
 
         if (node.children != null)
         {
             for (int i = 0; i < node.children.Length; ++i)
             {
-                SegmentNode child = node.children[i];
-                parent.AddNode(CopyRoad(child), i);
+                SegmentNode childNode = node.children[i];
+                newNode.AddNode(CopyRoad(childNode), i);
             }
         }
-        return parent;
+        return newNode;
     }
 
 
@@ -165,6 +161,9 @@ public class RoadMeshCreator : MonoBehaviour
 
         SegmentNode newStartNode = CopyRoad(StartNode);
         GenerateSmoothRoadSegmentNode(newStartNode, smoothPercent);
+
+        //   Debug.Log("the same node? " + (newStartNode == StartNode));
+        //   Debug.Log("the same node? " + (newStartNode.children[0] == StartNode.children[0]));
 
         List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
@@ -188,9 +187,9 @@ public class RoadMeshCreator : MonoBehaviour
     {
         Queue<SegmentNode> queue = new Queue<SegmentNode>();
 
-        if (StartNode != null)
+        if (startNode != null)
         {
-            queue.Enqueue(StartNode);
+            queue.Enqueue(startNode);
         }
 
         //Bredth First 
@@ -236,7 +235,15 @@ public class RoadMeshCreator : MonoBehaviour
                         //目前使用两个路段之间最大值作为过渡
                         float width = Mathf.Max(node.width, child.width);
 
-                        SmoothSegmentNode smoothNode = new SmoothSegmentNode(width, node.endPoint, oldEndPoint, child.startPoint, oldChildStartPoint, node.GetRoll(1f), child.GetRoll(0f));
+                        Vector3 startPoint = node.endPoint;
+                        Vector3 controlPoint1 = oldEndPoint;
+                        Vector3 controlPoint2 = oldChildStartPoint;
+                        Vector3 endPoint = child.startPoint;
+
+                        Debug.DrawLine(startPoint + Vector3.up, controlPoint1 + Vector3.up, Color.blue, 30);
+                        Debug.DrawLine(endPoint + Vector3.up, controlPoint2 + Vector3.up, Color.green, 30);
+
+                        SmoothSegmentNode smoothNode = new SmoothSegmentNode(width, startPoint, controlPoint1, controlPoint2, endPoint, node.GetRoll(1f), child.GetRoll(0f));
 
                         //插入节点，重建树的层级关系
                         smoothNode.AddNode(child, 0);
@@ -268,6 +275,7 @@ public class RoadMeshCreator : MonoBehaviour
         //TODO
 
 
+        //目前全部切分
         return true;
     }
 

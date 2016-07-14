@@ -36,6 +36,7 @@ public class RoadCreatorUI : MonoBehaviour
     public Button addSegmentButton;
     public Button addIntersectionButton;
     public Button removeSegmentButton;
+    public Button generateButton;
     #endregion
 
     #region
@@ -132,6 +133,7 @@ public class RoadCreatorUI : MonoBehaviour
         addIntersectionButton.onClick.AddListener(OnAddIntersectionClicked);
         removeSegmentButton.onClick.AddListener(OnRemoveSegmentClicked);
         removeSegmentButton.interactable = false;
+        generateButton.onClick.AddListener(OnGenerateClicked);
         //road
         subdivistionField.onEndEdit.AddListener(OnSubdivisionChanged);
         smoothSlider.onValueChanged.AddListener(OnSmoothChanged);
@@ -163,6 +165,13 @@ public class RoadCreatorUI : MonoBehaviour
     public void OnAddIntersectionClicked()
     {
         AddSegment(true);
+    }
+
+    public void OnGenerateClicked()
+    {
+        float percent = smoothSlider.value / 100;
+        int subdivision = (int)tryGetFloat(subdivistionField.text, minSubdivition);
+        creator.GenerateSmoothRoadMesh(subdivision, percent);
     }
 
     /// <summary>

@@ -86,7 +86,11 @@ public abstract class SegmentNode : ICloneable, IRoadSegment
         }
 
         children[index] = newNode;
-        newNode.parent = this;
+
+        if (newNode != null)
+        {
+            newNode.parent = this;
+        }
     }
 
     public virtual void InsertNode(SegmentNode newNode)
@@ -268,14 +272,14 @@ public class StraightSegmentNode : SegmentNode
     public override void ShrinkStartPoint(float percent)
     {
         percent = Mathf.Clamp01(percent);
-        startPoint = startPoint + (endPoint - startPoint).normalized * (1 - percent) * length;
+        startPoint = startPoint + (endPoint - startPoint).normalized * percent * length;
         length *= (1 - percent);
     }
 
     public override void ShrinkEndPoint(float percent)
     {
         percent = Mathf.Clamp01(percent);
-        endPoint = endPoint - (endPoint - startPoint).normalized * (1 - percent) * length;
+        endPoint = endPoint - (endPoint - startPoint).normalized * percent * length;
         length *= (1 - percent);
     }
 
