@@ -348,7 +348,6 @@ public class SmoothSegmentNode : SegmentNode
         this.controlPoint1 = controlPoint1;
         this.controlPoint2 = controlPoint2;
         this.endPoint = endPoint;
-
         this.startRoll = startRoll;
         this.endRoll = endRoll;
 
@@ -360,6 +359,9 @@ public class SmoothSegmentNode : SegmentNode
         bezierPoints[1] = this.controlPoint1;
         bezierPoints[2] = controlPoint2;
         bezierPoints[3] = endPoint;
+
+        Debug.DrawLine(GetPosition(0, -width / 2), GetPosition(0, width / 2), Color.red, 30);
+        Debug.DrawLine(GetPosition(1, -width / 2), GetPosition(1, width / 2), Color.red, 30);
     }
 
     public override Vector3 GetPosition(float t, float offset)
@@ -546,7 +548,16 @@ public class CornerSegmentNode : SegmentNode
 
     public override float GetRoll(float t)
     {
-        return roll;
+        float r = GetRotation(t).eulerAngles.z;
+
+        if (r > 180)
+        {
+            return r - 360;
+        }
+        else
+        {
+            return r;
+        }
     }
 
     #endregion

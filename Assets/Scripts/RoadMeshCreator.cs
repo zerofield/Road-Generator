@@ -244,7 +244,8 @@ public class RoadMeshCreator : MonoBehaviour
                             //重新计算controlPoint1
                             CornerSegmentNode cornerNode = parentNode as CornerSegmentNode;
                             Quaternion rotation = cornerNode.GetRotation(1);
-                            float length = 2 * Mathf.PI * cornerNode.radius * cornerNode.angle / 360f * smooth;
+
+                            float length = Mathf.Abs(cornerNode.radius * Mathf.Tan(Mathf.Deg2Rad * Mathf.Abs(cornerNode.angle * smooth)));
                             controlPoint1 = cornerNode.endPoint + rotation * Vector3.forward * length;
                         }
 
@@ -253,14 +254,21 @@ public class RoadMeshCreator : MonoBehaviour
                             //重新计算controlPoint2
                             CornerSegmentNode cornerNode = childNode as CornerSegmentNode;
                             Quaternion rotation = cornerNode.GetRotation(0);
-                            float length = 2 * Mathf.PI * cornerNode.radius * cornerNode.angle / 360f * smooth;
+
+                            float length = Mathf.Abs(cornerNode.radius * Mathf.Tan(Mathf.Deg2Rad * Mathf.Abs(cornerNode.angle * smooth)));
                             controlPoint2 = cornerNode.startPoint + rotation * Vector3.back * length;
                         }
 
                         Debug.DrawLine(startPoint + Vector3.up * 0.1f, controlPoint1 + Vector3.up * 0.1f, Color.cyan, 30);
                         Debug.DrawLine(endPoint + Vector3.up * 0.1f, controlPoint2 + Vector3.up * 0.1f, Color.green, 30);
 
-                        SmoothSegmentNode smoothNode = new SmoothSegmentNode(width, startPoint, controlPoint1, controlPoint2, endPoint, parentNode.GetRoll(1f), childNode.GetRoll(0f));
+
+                        float roll1 = parentNode.GetRoll(1f);
+                        float roll2 = childNode.GetRoll(0f);
+
+                        Debug.Log("roll 1: " + roll1 + ", roll2:" + roll2);
+
+                        SmoothSegmentNode smoothNode = new SmoothSegmentNode(width, startPoint, controlPoint1, controlPoint2, endPoint, roll1, roll2);
 
                         //插入节点，重建树的层级关系
                         smoothNode.AddNode(childNode, 0);

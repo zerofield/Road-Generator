@@ -141,6 +141,39 @@ public class RoadCreatorUI : MonoBehaviour
         smoothSlider.minValue = smoothMin;
         smoothSlider.maxValue = smoothMax;
         smoothSlider.value = (smoothMin + smoothMax) / 2;
+
+    }
+
+    void Start()
+    {
+    //    Test();
+    }
+
+    void Test()
+    {
+        StraightSegmentNode node0 = new StraightSegmentNode(10, Vector3.zero, 30, -20, 20, 0);
+        StraightSegmentNode node1 = new StraightSegmentNode(10, node0.endPoint, 20, 0, 0, 0);
+        CornerSegmentNode node2 = new CornerSegmentNode(10, node1.endPoint, 0, node1.yaw, 30, 30, 60);
+        CornerSegmentNode node3 = new CornerSegmentNode(10, node2.endPoint, 20, node2.endYaw, 0, -30, 60);
+
+
+        CornerSegmentNode node4 = new CornerSegmentNode(10, node3.endPoint, 0, node3.endYaw, -20, 40, 60);
+        CornerSegmentNode node5 = new CornerSegmentNode(20, node4.endPoint, 0, node4.endYaw, 0, 60, 100);
+        CornerSegmentNode node6 = new CornerSegmentNode(10, node5.endPoint, 0, node5.endYaw, 0, -70, 100);
+
+
+
+        node0.AddNode(node1);
+        node1.AddNode(node2);
+        node2.AddNode(node3);
+        node3.AddNode(node4);
+        node4.AddNode(node5);
+        node5.AddNode(node6);
+
+        creator.StartNode = node0;
+
+        creator.GenerateSmoothRoadMesh(10, 0.1f);
+
     }
 
     private float tryGetFloat(string text, float defaultValue)
