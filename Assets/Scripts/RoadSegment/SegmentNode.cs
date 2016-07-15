@@ -454,9 +454,16 @@ public class CornerSegmentNode : SegmentNode
         Quaternion endRotation = GetRotation(1.0f);
         endYaw = endRotation.eulerAngles.y;
 
-        Debug.DrawLine(startPoint, circleCenterPoint, Color.red, 30);
-        Debug.DrawLine(endPoint, circleCenterPoint, Color.red, 30);
+        //debug 代码
+        Debug.DrawLine(startPoint, startPoint + upwards * 5, Color.yellow, 30);
+        Debug.DrawLine(endPoint, endPoint + upwards * 5, Color.yellow, 30);
 
+        Debug.DrawLine(startPoint, circleCenterPoint, Color.black, 30);
+        Debug.DrawLine(endPoint, circleCenterPoint, Color.black, 30);
+
+
+        Debug.DrawLine(GetPosition(0, 0), GetPosition(0, 0) + GetNormal(0), Color.red, 30);
+        Debug.DrawLine(GetPosition(1, 0), GetPosition(1, 0) + GetNormal(0), Color.magenta, 30);
     }
 
     public override Vector3 GetPosition(float t, float offset)
@@ -466,15 +473,18 @@ public class CornerSegmentNode : SegmentNode
         Quaternion angleRotation = Quaternion.AngleAxis(t * angle, upwards);
         Vector3 pointPosition = circleCenterPoint + angleRotation * centerToStartPoint * radius;
         Vector3 position = pointPosition + GetRotation(t) * Vector3.right * offset;
+
+        Debug.DrawLine(position, position + GetNormal(t), Color.magenta, 30);
         return position;
     }
 
     public override Vector3 GetTangent(float t)
     {
         Quaternion angleRotation = Quaternion.AngleAxis(t * angle, upwards);
+        Vector3 pointUpwards = (planeRotation * angleRotation * Quaternion.Euler(0, 0, roll) * Vector3.up).normalized;
         Vector3 pointPosition = circleCenterPoint + angleRotation * centerToStartPoint * radius;
         Vector3 centerToPoint = pointPosition - circleCenterPoint;
-        Vector3 pointUpwards = angleRotation * Quaternion.Euler(0, 0, roll) * Vector3.up;
+
         if (angle < 0)
         {
             return Vector3.Cross(centerToPoint, pointUpwards).normalized;
@@ -489,7 +499,8 @@ public class CornerSegmentNode : SegmentNode
     {
         t = Mathf.Clamp01(t);
         Quaternion angleRotation = Quaternion.AngleAxis(t * angle, upwards);
-        Vector3 pointUpwards = (angleRotation * Quaternion.Euler(0, 0, roll) * Vector3.up).normalized;
+        Vector3 pointUpwards = (planeRotation * angleRotation * Quaternion.Euler(0, 0, roll) * Vector3.up).normalized;
+
         return pointUpwards;
     }
 
@@ -505,12 +516,18 @@ public class CornerSegmentNode : SegmentNode
         Vector3 newStartPoint = GetPosition(percent, 0);
         Quaternion rotation = GetRotation(percent);
 
-        //
         startPoint = newStartPoint;
-        startYaw = rotation.eulerAngles.y;
+        //
+        yaw = startYaw = rotation.eulerAngles.y;
+        planeRotation = Quaternion.Euler(pitch, yaw, 0);
+        circleCenterPoint = startPoint + planeRotation * direction * radius;
+        centerToStartPoint = (startPoint - circleCenterPoint).normalized;
+        upwards = planeRotation * Vector3.up;
+        downwards = planeRotation * Vector3.down;
+        //
         angle *= (1 - percent);
 
-        Debug.DrawLine(startPoint, circleCenterPoint, Color.blue, 30);
+        Debug.DrawLine(startPoint, circleCenterPoint, Color.gray, 30);
     }
 
     public override void ShrinkEndPoint(float percent)
@@ -524,7 +541,7 @@ public class CornerSegmentNode : SegmentNode
         endYaw = rotation.eulerAngles.y;
         angle *= (1 - percent);
 
-        Debug.DrawLine(endPoint, circleCenterPoint, Color.blue, 30);
+        Debug.DrawLine(endPoint, circleCenterPoint, Color.gray, 30);
     }
 
     public override float GetRoll(float t)
