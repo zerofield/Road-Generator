@@ -23,12 +23,22 @@ public class RoadCreatorUI : MonoBehaviour
 
     public RoadMeshCreator creator;
 
-    #region 添加路段 
+    #region Fields
     public float minWidth = 1;
     public float minLength = 1;
 
+    public float minMiu = 0;
+    public float maxMiu = 1;
+
+    public float minRoadWidth = 1;
+    public int minSubdivition = 2;
+
+    public int smoothMin = 10;
+    public int smoothMax = 50;
+
     public InputField widthInputField;
     public InputField lengthInputField;
+    public InputField miuInputField;
     public InputField pitchInputField;
     public InputField rollInputField;
     public InputField angleInputField;
@@ -36,19 +46,12 @@ public class RoadCreatorUI : MonoBehaviour
     public Button addSegmentButton;
     public Button addIntersectionButton;
     public Button removeSegmentButton;
-    public Button generateButton;
-    #endregion
 
-    #region
-
-    public float minRoadWidth = 1;
-    public int minSubdivition = 2;
-    public int smoothMin = 10;
-    public int smoothMax = 50;
-
+    //generate panel
     public InputField subdivistionField;
     public Text smoothText;
     public Slider smoothSlider;
+    public Button generateButton;
     #endregion
 
     public void OnWidthChanged(string newText)
@@ -72,6 +75,13 @@ public class RoadCreatorUI : MonoBehaviour
             length = minLength;
             lengthInputField.text = length.ToString();
         }
+    }
+
+    public void OnMiuChanged(string newText)
+    {
+        float miu = tryGetFloat(newText, minMiu);
+        miu = Mathf.Clamp(miu, minMiu, maxMiu);
+        miuInputField.text = miu.ToString();
     }
 
     public void OnPitchChanged(string newText)
@@ -124,6 +134,7 @@ public class RoadCreatorUI : MonoBehaviour
         //road segment input fileds
         widthInputField.onEndEdit.AddListener(OnWidthChanged);
         lengthInputField.onEndEdit.AddListener(OnLengthChanged);
+        miuInputField.onEndEdit.AddListener(OnMiuChanged);
         pitchInputField.onEndEdit.AddListener(OnPitchChanged);
         rollInputField.onEndEdit.AddListener(OnRollChanged);
         angleInputField.onEndEdit.AddListener(OnAngleChanged);
@@ -146,20 +157,22 @@ public class RoadCreatorUI : MonoBehaviour
 
     void Start()
     {
-    //    Test();
+       // Test();
     }
 
     void Test()
     {
-        StraightSegmentNode node0 = new StraightSegmentNode(10, Vector3.zero, 30, -20, 20, 0);
-        StraightSegmentNode node1 = new StraightSegmentNode(10, node0.endPoint, 20, 0, 0, 0);
-        CornerSegmentNode node2 = new CornerSegmentNode(10, node1.endPoint, 0, node1.yaw, 30, 30, 60);
-        CornerSegmentNode node3 = new CornerSegmentNode(10, node2.endPoint, 20, node2.endYaw, 0, -30, 60);
+        float miu = 0.1f;
+
+        StraightSegmentNode node0 = new StraightSegmentNode(10, miu, Vector3.zero, 30, -20, 20, 0);
+        StraightSegmentNode node1 = new StraightSegmentNode(10, miu, node0.endPoint, 20, 0, 0, 0);
+        CornerSegmentNode node2 = new CornerSegmentNode(10, miu, node1.endPoint, 0, node1.yaw, 30, 30, 60);
+        CornerSegmentNode node3 = new CornerSegmentNode(10, miu, node2.endPoint, 20, node2.endYaw, 0, -30, 60);
 
 
-        CornerSegmentNode node4 = new CornerSegmentNode(10, node3.endPoint, 0, node3.endYaw, -20, 40, 60);
-        CornerSegmentNode node5 = new CornerSegmentNode(20, node4.endPoint, 0, node4.endYaw, 0, 60, 100);
-        CornerSegmentNode node6 = new CornerSegmentNode(10, node5.endPoint, 0, node5.endYaw, 0, -70, 100);
+        CornerSegmentNode node4 = new CornerSegmentNode(10, miu, node3.endPoint, 0, node3.endYaw, -20, 40, 60);
+        CornerSegmentNode node5 = new CornerSegmentNode(20, miu, node4.endPoint, 0, node4.endYaw, 0, 60, 100);
+        CornerSegmentNode node6 = new CornerSegmentNode(10, miu, node5.endPoint, 0, node5.endYaw, 0, -70, 100);
 
 
 
@@ -172,7 +185,7 @@ public class RoadCreatorUI : MonoBehaviour
 
         creator.StartNode = node0;
 
-        creator.GenerateSmoothRoadMesh(10, 0.1f);
+        creator.GenerateSmoothRoadMesh(20, 0.1f);
 
     }
 
@@ -220,6 +233,7 @@ public class RoadCreatorUI : MonoBehaviour
 
         float width = tryGetFloat(widthInputField.text, minWidth);
         float length = tryGetFloat(lengthInputField.text, minLength);
+        float miu = tryGetFloat(miuInputField.text, minMiu);
         float pitch = tryGetFloat(pitchInputField.text, 0);
         float roll = tryGetFloat(rollInputField.text, 0);
         float angle = tryGetFloat(angleInputField.text, 0);
@@ -272,7 +286,7 @@ public class RoadCreatorUI : MonoBehaviour
 
         if (isAddIntersection)//添加交叉路段
         {
-            newNode = new IntersectionSegmentNode(width, startPoint, length, pitch, roll, yaw);
+            newNode = new IntersectionSegmentNode(width, miu, startPoint, length, pitch, roll, yaw);
 
         }
         else
@@ -281,11 +295,11 @@ public class RoadCreatorUI : MonoBehaviour
             //分为转弯和平面两个情况来考虑
             if (angle != 0 && radius > 0)    //转弯路面
             {
-                newNode = new CornerSegmentNode(width, startPoint, pitch, yaw, roll, angle, radius);
+                newNode = new CornerSegmentNode(width, miu, startPoint, pitch, yaw, roll, angle, radius);
             }
             else //普通路面
             {
-                newNode = new StraightSegmentNode(width, startPoint, length, pitch, roll, yaw);
+                newNode = new StraightSegmentNode(width, miu, startPoint, length, pitch, roll, yaw);
             }
         }
 

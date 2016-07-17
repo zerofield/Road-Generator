@@ -162,9 +162,6 @@ public class RoadMeshCreator : MonoBehaviour
         SegmentNode newStartNode = CopyRoad(StartNode);
         GenerateSmoothRoadSegmentNode(newStartNode, smoothPercent);
 
-        //   Debug.Log("the same node? " + (newStartNode == StartNode));
-        //   Debug.Log("the same node? " + (newStartNode.children[0] == StartNode.children[0]));
-
         List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
         GenerateMesh(subdivision, newStartNode, vertices, triangles);
@@ -216,30 +213,77 @@ public class RoadMeshCreator : MonoBehaviour
                 if (IsSmoothNeeded(parentNode, index))
                 {
                     //拆分路段
+                    Vector3 oldPrentEndPoint = Vector3.zero;
+                    Vector3 oldChildStartPoint = childNode.startPoint;
+
+                    childNode.ShrinkStartPoint(smooth);
+
+                    //目前使用两个路段之间最小值作为过渡
+                    float roadWidth;
+
+                    Vector3 startPoint = Vector3.zero;
+                    Vector3 controlPoint1;
+                    Vector3 controlPoint2;
+                    Vector3 endPoint = childNode.startPoint;
+
+                    float roll1 = 0f;
+                    float roll2 = childNode.GetRoll(0f);
+
+                    //使用parent作为过渡段的miu
+                    float miu = parentNode.miu;
 
                     //分交叉路段和普通路段来处理
                     if (parentNode.type == SegmentType.Intersection)
                     {
-                        //TODO 
+                        float intersectionWidth = 0;
+
+                        IntersectionSegmentNode interSection = (IntersectionSegmentNode)parentNode;
+
+                        //重新计算宽度
+                        switch (index)
+                        {
+                            case IntersectionSegmentNode.INDEX_CENTER:
+                                intersectionWidth = interSection.width;
+                                oldPrentEndPoint = interSection.endPoint;
+                                interSection.ShrinkEndPoint(smooth);
+                                startPoint = interSection.endPoint;
+                                roll1 = interSection.GetRoll(1f);
+                                break;
+
+                            case IntersectionSegmentNode.INDEX_CENTER_LEFT:
+                                intersectionWidth = interSection.length;
+                                oldPrentEndPoint = interSection.centerLeft;
+                                interSection.ShrinkLeftPoint(smooth);
+                                startPoint = interSection.centerLeft;
+                                roll1 = interSection.centerLeftRotation.eulerAngles.z;
+                                break;
+                            case IntersectionSegmentNode.INDEX_CENTER_RIGHT:
+                                intersectionWidth = interSection.length;
+                                oldPrentEndPoint = interSection.centerRight;
+                                parentNode.ShrinkEndPoint(smooth);
+                                interSection.ShrinkRightPoint(smooth);
+                                startPoint = interSection.centerRight;
+                                roll1 = interSection.centerRightRotation.eulerAngles.z;
+                                break;
+                        }
+
+                        roadWidth = Mathf.Min(intersectionWidth, childNode.width);
+                        controlPoint1 = oldPrentEndPoint;
+                        controlPoint2 = oldChildStartPoint;
                     }
                     else
                     {
-                        Vector3 oldEndPoint = parentNode.endPoint;
-                        Vector3 oldChildStartPoint = childNode.startPoint;
-
+                        oldPrentEndPoint = parentNode.endPoint;
                         parentNode.ShrinkEndPoint(smooth);
-                        childNode.ShrinkStartPoint(smooth);
+                        roll1 = parentNode.GetRoll(1f);
 
-                        //目前使用两个路段之间最大值作为过渡
-                        float width = Mathf.Max(parentNode.width, childNode.width);
+                        roadWidth = Mathf.Min(parentNode.width, childNode.width);
+                        startPoint = parentNode.endPoint;
+                        controlPoint1 = oldPrentEndPoint;
+                        controlPoint2 = oldChildStartPoint;
+                      
 
-                        Vector3 startPoint = parentNode.endPoint;
-                        Vector3 controlPoint1 = oldEndPoint;
-                        Vector3 controlPoint2 = oldChildStartPoint;
-                        Vector3 endPoint = childNode.startPoint;
-
-                        //处理corner 的控制点问题
-                        if (parentNode.type == SegmentType.Corner)
+                        if (parentNode.type == SegmentType.Corner)  //处理corner的控制点问题
                         {
                             //重新计算controlPoint1
                             CornerSegmentNode cornerNode = parentNode as CornerSegmentNode;
@@ -248,32 +292,27 @@ public class RoadMeshCreator : MonoBehaviour
                             float length = Mathf.Abs(cornerNode.radius * Mathf.Tan(Mathf.Deg2Rad * Mathf.Abs(cornerNode.angle * smooth)));
                             controlPoint1 = cornerNode.endPoint + rotation * Vector3.forward * length;
                         }
-
-                        if (childNode.type == SegmentType.Corner)
-                        {
-                            //重新计算controlPoint2
-                            CornerSegmentNode cornerNode = childNode as CornerSegmentNode;
-                            Quaternion rotation = cornerNode.GetRotation(0);
-
-                            float length = Mathf.Abs(cornerNode.radius * Mathf.Tan(Mathf.Deg2Rad * Mathf.Abs(cornerNode.angle * smooth)));
-                            controlPoint2 = cornerNode.startPoint + rotation * Vector3.back * length;
-                        }
-
-                        Debug.DrawLine(startPoint + Vector3.up * 0.1f, controlPoint1 + Vector3.up * 0.1f, Color.cyan, 30);
-                        Debug.DrawLine(endPoint + Vector3.up * 0.1f, controlPoint2 + Vector3.up * 0.1f, Color.green, 30);
-
-
-                        float roll1 = parentNode.GetRoll(1f);
-                        float roll2 = childNode.GetRoll(0f);
-
-                        Debug.Log("roll 1: " + roll1 + ", roll2:" + roll2);
-
-                        SmoothSegmentNode smoothNode = new SmoothSegmentNode(width, startPoint, controlPoint1, controlPoint2, endPoint, roll1, roll2);
-
-                        //插入节点，重建树的层级关系
-                        smoothNode.AddNode(childNode, 0);
-                        parentNode.AddNode(smoothNode, index);
                     }
+
+                    //处理转弯child节点的控制点
+                    if (childNode.type == SegmentType.Corner)
+                    {
+                        //重新计算controlPoint2
+                        CornerSegmentNode cornerNode = childNode as CornerSegmentNode;
+                        Quaternion rotation = cornerNode.GetRotation(0);
+
+                        float length = Mathf.Abs(cornerNode.radius * Mathf.Tan(Mathf.Deg2Rad * Mathf.Abs(cornerNode.angle * smooth)));
+                        controlPoint2 = cornerNode.startPoint + rotation * Vector3.back * length;
+                    }
+
+                    Debug.DrawLine(startPoint + Vector3.up * 0.1f, controlPoint1 + Vector3.up * 0.1f, Color.cyan, 30);
+                    Debug.DrawLine(endPoint + Vector3.up * 0.1f, controlPoint2 + Vector3.up * 0.1f, Color.green, 30);
+
+                    SmoothSegmentNode smoothNode = new SmoothSegmentNode(roadWidth, miu, startPoint, controlPoint1, controlPoint2, endPoint, roll1, roll2);
+
+                    //插入节点，重建树的层级关系
+                    smoothNode.AddNode(childNode, 0);
+                    parentNode.AddNode(smoothNode, index);
                 }
 
                 //跳过平滑段，直接添加实际处理段

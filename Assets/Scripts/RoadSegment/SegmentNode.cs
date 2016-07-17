@@ -47,6 +47,13 @@ public abstract class SegmentNode : ICloneable, IRoadSegment
     public Vector3 endPoint;
 
     public float width;
+
+    public float leftWidth;
+
+    public float rightWidth;
+
+    public float miu;
+
     public float yaw;
 
     public SegmentNode parent;
@@ -57,10 +64,13 @@ public abstract class SegmentNode : ICloneable, IRoadSegment
 
     #region Methods
 
-    public SegmentNode(SegmentType type, float width, Vector3 startPoint)
+    public SegmentNode(SegmentType type, float width, float miu, Vector3 startPoint)
     {
         this.type = type;
+        this.miu = miu;
         this.width = width;
+        this.leftWidth = 0.5f * width;
+        this.rightWidth = 0.5f * width;
         this.startPoint = startPoint;
 
         if (type == SegmentType.Intersection)
@@ -171,13 +181,12 @@ public abstract class SegmentNode : ICloneable, IRoadSegment
         List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
 
-        float halfWidth = width / 2;
         for (int i = 0; i <= subdivision; ++i)
         {
             float t = (float)i / subdivision;
 
-            Vector3 left = GetPosition(t, -halfWidth);
-            Vector3 right = GetPosition(t, halfWidth);
+            Vector3 left = GetPosition(t, -GetLeftWidth());
+            Vector3 right = GetPosition(t, GetRightWidth());
 
             vertices.Add(left);
             vertices.Add(right);
@@ -200,14 +209,22 @@ public abstract class SegmentNode : ICloneable, IRoadSegment
 
     }
 
-    public abstract object Clone();
+    public float GetLeftWidth()
+    {
+        return leftWidth;
+    }
+
+    public float GetRightWidth()
+    {
+        return rightWidth;
+    }
 
     public abstract Vector3 GetPosition(float t, float offset);
-
     public abstract Vector3 GetTangent(float t);
     public abstract void ShrinkStartPoint(float percent);
     public abstract void ShrinkEndPoint(float percent);
     public abstract float GetRoll(float t);
+    public abstract object Clone();
 
     #endregion
 }
@@ -226,12 +243,12 @@ public class StraightSegmentNode : SegmentNode
 
     #region Methods
 
-    public StraightSegmentNode(float width, Vector3 startPoint, float length, float pitch, float roll, float yaw) : this(SegmentType.Straight, width, startPoint, length, pitch, roll, yaw)
+    public StraightSegmentNode(float width, float miu, Vector3 startPoint, float length, float pitch, float roll, float yaw) : this(SegmentType.Straight, width, miu, startPoint, length, pitch, roll, yaw)
     {
 
     }
 
-    public StraightSegmentNode(SegmentType type, float width, Vector3 startPoint, float length, float pitch, float roll, float yaw) : base(type, width, startPoint)
+    public StraightSegmentNode(SegmentType type, float width, float miu, Vector3 startPoint, float length, float pitch, float roll, float yaw) : base(type, width, miu, startPoint)
     {
         this.length = length;
         this.pitch = pitch;
@@ -265,7 +282,7 @@ public class StraightSegmentNode : SegmentNode
 
     public override object Clone()
     {
-        SegmentNode node = new StraightSegmentNode(type, width, startPoint, length, pitch, roll, yaw);
+        SegmentNode node = new StraightSegmentNode(type, width, miu, startPoint, length, pitch, roll, yaw);
         return node;
     }
 
@@ -295,37 +312,64 @@ public class IntersectionSegmentNode : StraightSegmentNode
 {
     #region Fields
 
-    public Vector3 centerLeft;
+    /// <summary>
+    /// 中心点
+    /// </summary>
+    private Vector3 center;
 
+    public Vector3 centerLeft;
     public Vector3 centerRight;
 
     public Quaternion centerLeftRotation;
     public Quaternion centerRightRotation;
 
-    public const int INDEX_CENTER = 0;
-    public const int INDEX_CENTER_LEFT = 1;
-    public const int INDEX_CENTER_RIGHT = 2;
+    public const int INDEX_CENTER_LEFT = 0;
+    public const int INDEX_CENTER_RIGHT = 1;
+    public const int INDEX_CENTER = 2;
 
     #endregion
 
     #region Methods
-    public IntersectionSegmentNode(float width, Vector3 startPoint, float length, float pitch, float roll, float yaw) : base(SegmentType.Intersection, width, startPoint, length, pitch, roll, yaw)
+    public IntersectionSegmentNode(float width, float miu, Vector3 startPoint, float length, float pitch, float roll, float yaw) : base(SegmentType.Intersection, width, miu, startPoint, length, pitch, roll, yaw)
     {
-        //TODO 增加控制点等信息
-        Vector3 center = (startPoint + endPoint) / 2;
-        centerLeft = center + rotation * Vector3.left * width / 2;
-        centerRight = center + rotation * Vector3.right * width / 2;
+        center = (startPoint + endPoint) / 2;
+
+        centerLeft = center + rotation * Vector3.left * leftWidth;
+        centerRight = center + rotation * Vector3.right * rightWidth;
 
         centerLeftRotation = rotation * Quaternion.Euler(0, -90, 0);
         centerRightRotation = rotation * Quaternion.Euler(0, 90, 0);
 
     }
 
+    /// <summary>
+    /// 减小左侧边缘
+    /// </summary>
+    /// <param name="percent">百分比</param>
+    public void ShrinkLeftPoint(float percent)
+    {
+        leftWidth *= percent;
+        centerLeft = center + rotation * Vector3.left * leftWidth;
+        width = leftWidth + rightWidth;
+    }
+
+    /// <summary>
+    /// 减小右侧边缘
+    /// </summary>
+    /// <param name="percent">百分比</param>
+    public void ShrinkRightPoint(float percent)
+    {
+        rightWidth *= percent;
+        centerRight = center + rotation * Vector3.right * rightWidth;
+        width = leftWidth + rightWidth;
+    }
+
     public override object Clone()
     {
-        SegmentNode node = new IntersectionSegmentNode(width, startPoint, length, pitch, roll, yaw);
+        SegmentNode node = new IntersectionSegmentNode(width, miu, startPoint, length, pitch, roll, yaw);
         return node;
     }
+
     #endregion
 }
 
@@ -343,7 +387,7 @@ public class SmoothSegmentNode : SegmentNode
     #endregion
 
     #region Methods
-    public SmoothSegmentNode(float width, Vector3 startPoint, Vector3 controlPoint1, Vector3 controlPoint2, Vector3 endPoint, float startRoll, float endRoll) : base(SegmentType.Smooth, width, startPoint)
+    public SmoothSegmentNode(float width, float miu, Vector3 startPoint, Vector3 controlPoint1, Vector3 controlPoint2, Vector3 endPoint, float startRoll, float endRoll) : base(SegmentType.Smooth, width, miu, startPoint)
     {
         this.controlPoint1 = controlPoint1;
         this.controlPoint2 = controlPoint2;
@@ -374,8 +418,19 @@ public class SmoothSegmentNode : SegmentNode
 
     public override float GetRoll(float t)
     {
+        //cos 变化
+
         t = Mathf.Clamp01(t);
-        return Mathf.Lerp(startRoll, endRoll, t);
+        float roll = 0f;
+
+        float rad = t * Mathf.PI;
+
+        float k = (startRoll - endRoll) / 2;
+        float yOffset = (startRoll + endRoll) / 2;
+
+        roll = k * Mathf.Cos(rad) + yOffset;
+
+        return roll;
     }
 
     public override Vector3 GetTangent(float t)
@@ -385,7 +440,7 @@ public class SmoothSegmentNode : SegmentNode
 
     public override object Clone()
     {
-        SegmentNode node = new SmoothSegmentNode(width, startPoint, controlPoint1, controlPoint2, endPoint, startRoll, endRoll);
+        SegmentNode node = new SmoothSegmentNode(width, miu, startPoint, controlPoint1, controlPoint2, endPoint, startRoll, endRoll);
         return node;
     }
 
@@ -435,7 +490,7 @@ public class CornerSegmentNode : SegmentNode
 
     #region Methods
 
-    public CornerSegmentNode(float width, Vector3 startPoint, float pitch, float yaw, float roll, float angle, float radius) : base(SegmentType.Corner, width, startPoint)
+    public CornerSegmentNode(float width, float miu, Vector3 startPoint, float pitch, float yaw, float roll, float angle, float radius) : base(SegmentType.Corner, width, miu, startPoint)
     {
         this.pitch = pitch;
         this.yaw = yaw;
@@ -508,7 +563,7 @@ public class CornerSegmentNode : SegmentNode
 
     public override object Clone()
     {
-        SegmentNode node = new CornerSegmentNode(width, startPoint, pitch, startYaw, roll, angle, radius);
+        SegmentNode node = new CornerSegmentNode(width, miu, startPoint, pitch, startYaw, roll, angle, radius);
         return node;
     }
 
