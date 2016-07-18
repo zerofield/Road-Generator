@@ -260,7 +260,6 @@ public class RoadMeshCreator : MonoBehaviour
                             case IntersectionSegmentNode.INDEX_CENTER_RIGHT:
                                 intersectionWidth = interSection.length;
                                 oldPrentEndPoint = interSection.centerRight;
-                                parentNode.ShrinkEndPoint(smooth);
                                 interSection.ShrinkRightPoint(smooth);
                                 startPoint = interSection.centerRight;
                                 roll1 = interSection.centerRightRotation.eulerAngles.z;
@@ -281,7 +280,7 @@ public class RoadMeshCreator : MonoBehaviour
                         startPoint = parentNode.endPoint;
                         controlPoint1 = oldPrentEndPoint;
                         controlPoint2 = oldChildStartPoint;
-                      
+
 
                         if (parentNode.type == SegmentType.Corner)  //处理corner的控制点问题
                         {

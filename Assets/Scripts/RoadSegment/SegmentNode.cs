@@ -323,9 +323,9 @@ public class IntersectionSegmentNode : StraightSegmentNode
     public Quaternion centerLeftRotation;
     public Quaternion centerRightRotation;
 
-    public const int INDEX_CENTER_LEFT = 0;
-    public const int INDEX_CENTER_RIGHT = 1;
-    public const int INDEX_CENTER = 2;
+    public const int INDEX_CENTER = 0;
+    public const int INDEX_CENTER_LEFT = 1;
+    public const int INDEX_CENTER_RIGHT = 2;
 
     #endregion
 
